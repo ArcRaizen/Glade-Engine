@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="BuoyancyDemo">
+      <UniqueIdentifier>{5bb23b64-15b3-4e70-aac5-f13e1503ed04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="OctreeDemo">
+      <UniqueIdentifier>{7c0bde75-3578-4bab-9f2c-80387bbb745d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TrebuchetDemo">
+      <UniqueIdentifier>{92231899-b350-4606-a1e5-776ffe95da47}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cloth Demo">
+      <UniqueIdentifier>{2a59ca97-7196-4e5e-a536-a483977a3cc5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Test Demo">
+      <UniqueIdentifier>{d0a9fe19-cc91-41f8-a8fe-a47b6b04099e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RigidBodyDemo">
+      <UniqueIdentifier>{c4c29c9c-e771-49b0-931e-3e19a458ae3f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyboardManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MouseManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Orb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="App.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BuoyancyDemo.h">
+      <Filter>BuoyancyDemo</Filter>
+    </ClInclude>
+    <ClInclude Include="OctreeDemo.h">
+      <Filter>OctreeDemo</Filter>
+    </ClInclude>
+    <ClInclude Include="Arcball.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawableOctree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TrebuchetDemo.h">
+      <Filter>TrebuchetDemo</Filter>
+    </ClInclude>
+    <ClInclude Include="ClothDemo.h">
+      <Filter>Cloth Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="TimerManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Test.h">
+      <Filter>Test Demo</Filter>
+    </ClInclude>
+    <ClInclude Include="RigidBodyDemo.h">
+      <Filter>RigidBodyDemo</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KeyboardManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MouseManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Orb.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BuoyancyDemo.cpp">
+      <Filter>BuoyancyDemo</Filter>
+    </ClCompile>
+    <ClCompile Include="App.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OctreeDemo.cpp">
+      <Filter>OctreeDemo</Filter>
+    </ClCompile>
+    <ClCompile Include="Arcball.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DrawableOctree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TrebuchetDemo.cpp">
+      <Filter>TrebuchetDemo</Filter>
+    </ClCompile>
+    <ClCompile Include="ClothDemo.cpp">
+      <Filter>Cloth Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="TimerManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Test.cpp">
+      <Filter>Test Demo</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBodyDemo.cpp">
+      <Filter>RigidBodyDemo</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

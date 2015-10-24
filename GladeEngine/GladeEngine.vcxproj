@@ -1,0 +1,151 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{2F1CE2E4-6713-4F17-A4A5-1F5716E50DBD}</ProjectGuid>
+    <RootNamespace>GladeEngine</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>.\..\lib\</OutDir>
+    <IncludePath>.\..\GladeEngine\;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>.\..\lib\</OutDir>
+    <IncludePath>.\..\GladeEngine\;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="Collider.h" />
+    <ClInclude Include="Contact.h" />
+    <ClInclude Include="ContactResolver.h" />
+    <ClInclude Include="Core.h" />
+    <ClInclude Include="Glade.h" />
+    <ClInclude Include="CollisionTests.h" />
+    <ClInclude Include="Math\Matrix.h" />
+    <ClInclude Include="Math\Plane.h" />
+    <ClInclude Include="Math\Quaternion.h" />
+    <ClInclude Include="Math\Vector.h" />
+    <ClInclude Include="Object.h" />
+    <ClInclude Include="Octree\Octnode.h" />
+    <ClInclude Include="Octree\Octree.h" />
+    <ClInclude Include="Particle Contact Generators\ParticleCableContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticleNonstiffRodContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticleContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticleLinkContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticlePinContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticlePlaneContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticleRodContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticleSystemContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticleSystemPlaneContactGenerator.h" />
+    <ClInclude Include="Particle Contact Generators\ParticleTearableCableContactGenerator.h" />
+    <ClInclude Include="Particle Force Generators\ParticleAttractorForce.h" />
+    <ClInclude Include="Particle Force Generators\ParticleBuoyancyForceGenerator.h" />
+    <ClInclude Include="Particle Force Generators\ParticleDirectionalForceGenerator.h" />
+    <ClInclude Include="Particle Force Generators\ParticleDragGenerator.h" />
+    <ClInclude Include="Particle Force Generators\ParticleForceGenerator.h" />
+    <ClInclude Include="Particle Force Generators\ParticleGravity.h" />
+    <ClInclude Include="Particle Force Generators\ParticleGuaranteedForce.h" />
+    <ClInclude Include="Particle Force Generators\ParticleSpringForceGenerator.h" />
+    <ClInclude Include="Particle.h" />
+    <ClInclude Include="ParticleContact.h" />
+    <ClInclude Include="ParticleContactResolver.h" />
+    <ClInclude Include="ParticleWorld.h" />
+    <ClInclude Include="Precision.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="RigidBody.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="World.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Contact.cpp" />
+    <ClCompile Include="ContactResolver.cpp" />
+    <ClCompile Include="Core.cpp" />
+    <ClCompile Include="CollisionTests.cpp" />
+    <ClCompile Include="Math\Matrix.cpp" />
+    <ClCompile Include="Math\Quaternion.cpp" />
+    <ClCompile Include="Math\Vector.cpp" />
+    <ClCompile Include="Octree\Octnode.cpp" />
+    <ClCompile Include="Octree\Octree.cpp" />
+    <ClCompile Include="Particle Contact Generators\ParticleCableContactGenerator.cpp" />
+    <ClCompile Include="Particle Contact Generators\ParticleNonstiffRodContactGenerator.cpp" />
+    <ClCompile Include="Particle Contact Generators\ParticlePinContactGenerator.cpp" />
+    <ClCompile Include="Particle Contact Generators\ParticlePlaneContactGenerator.cpp" />
+    <ClCompile Include="Particle Contact Generators\ParticleRodContactGenerator.cpp" />
+    <ClCompile Include="Particle Contact Generators\ParticleSystemPlaneContactGenerator.cpp" />
+    <ClCompile Include="Particle Contact Generators\ParticleTearableCableContactGenerator.cpp" />
+    <ClCompile Include="Particle Force Generators\ParticleAttractorForce.cpp" />
+    <ClCompile Include="Particle Force Generators\ParticleBuoyancyForceGenerator.cpp" />
+    <ClCompile Include="Particle Force Generators\ParticleDirectionalForceGenerator.cpp" />
+    <ClCompile Include="Particle Force Generators\ParticleDragGenerator.cpp" />
+    <ClCompile Include="Particle Force Generators\ParticleForceGenerator.cpp" />
+    <ClCompile Include="Particle Force Generators\ParticleGravity.cpp" />
+    <ClCompile Include="Particle Force Generators\ParticleGuaranteedForce.cpp" />
+    <ClCompile Include="Particle Force Generators\ParticleSpringForceGenerator.cpp" />
+    <ClCompile Include="Particle.cpp" />
+    <ClCompile Include="ParticleContact.cpp" />
+    <ClCompile Include="ParticleContactResolver.cpp" />
+    <ClCompile Include="ParticleWorld.cpp" />
+    <ClCompile Include="RigidBody.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="World.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

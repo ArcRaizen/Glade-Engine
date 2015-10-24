@@ -1,0 +1,249 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{a0a236fc-a72f-4890-8e1a-cb2cd1cf5d65}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle Force Generators">
+      <UniqueIdentifier>{b680fb82-d4e2-4718-b399-0feeac377a0e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle Contact Generators">
+      <UniqueIdentifier>{2d76d98c-a2ec-4484-8eed-ac6306da4164}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Particle Contact Generators\Particle System Contact Generator">
+      <UniqueIdentifier>{cb0f3592-fba0-436f-b326-1f171d2fe746}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Octree">
+      <UniqueIdentifier>{72591383-90c8-42ee-b517-4889004e5056}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Core.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Glade.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Precision.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Plane.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Quaternion.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Force Generators\ParticleAttractorForce.h">
+      <Filter>Particle Force Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Force Generators\ParticleDirectionalForceGenerator.h">
+      <Filter>Particle Force Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Force Generators\ParticleForceGenerator.h">
+      <Filter>Particle Force Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Force Generators\ParticleDragGenerator.h">
+      <Filter>Particle Force Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Force Generators\ParticleGravity.h">
+      <Filter>Particle Force Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Force Generators\ParticleGuaranteedForce.h">
+      <Filter>Particle Force Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Force Generators\ParticleSpringForceGenerator.h">
+      <Filter>Particle Force Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Force Generators\ParticleBuoyancyForceGenerator.h">
+      <Filter>Particle Force Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleContact.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleContactResolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticleContactGenerator.h">
+      <Filter>Particle Contact Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticleLinkContactGenerator.h">
+      <Filter>Particle Contact Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticleCableContactGenerator.h">
+      <Filter>Particle Contact Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticlePlaneContactGenerator.h">
+      <Filter>Particle Contact Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticleRodContactGenerator.h">
+      <Filter>Particle Contact Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleWorld.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticleSystemContactGenerator.h">
+      <Filter>Particle Contact Generators\Particle System Contact Generator</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticleSystemPlaneContactGenerator.h">
+      <Filter>Particle Contact Generators\Particle System Contact Generator</Filter>
+    </ClInclude>
+    <ClInclude Include="Octree\Octree.h">
+      <Filter>Octree</Filter>
+    </ClInclude>
+    <ClInclude Include="Object.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Octree\Octnode.h">
+      <Filter>Octree</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticleNonstiffRodContactGenerator.h">
+      <Filter>Particle Contact Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticlePinContactGenerator.h">
+      <Filter>Particle Contact Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle Contact Generators\ParticleTearableCableContactGenerator.h">
+      <Filter>Particle Contact Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="RigidBody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Collider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CollisionTests.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Contact.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ContactResolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Particle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Vector.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Quaternion.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Matrix.cpp">
+      <Filter>Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Force Generators\ParticleAttractorForce.cpp">
+      <Filter>Particle Force Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Force Generators\ParticleDirectionalForceGenerator.cpp">
+      <Filter>Particle Force Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Force Generators\ParticleDragGenerator.cpp">
+      <Filter>Particle Force Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Force Generators\ParticleForceGenerator.cpp">
+      <Filter>Particle Force Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Force Generators\ParticleGravity.cpp">
+      <Filter>Particle Force Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Force Generators\ParticleGuaranteedForce.cpp">
+      <Filter>Particle Force Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Force Generators\ParticleSpringForceGenerator.cpp">
+      <Filter>Particle Force Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Force Generators\ParticleBuoyancyForceGenerator.cpp">
+      <Filter>Particle Force Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleContact.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleContactResolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Contact Generators\ParticleCableContactGenerator.cpp">
+      <Filter>Particle Contact Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Contact Generators\ParticleRodContactGenerator.cpp">
+      <Filter>Particle Contact Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Contact Generators\ParticlePlaneContactGenerator.cpp">
+      <Filter>Particle Contact Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleWorld.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Contact Generators\ParticleSystemPlaneContactGenerator.cpp">
+      <Filter>Particle Contact Generators\Particle System Contact Generator</Filter>
+    </ClCompile>
+    <ClCompile Include="Octree\Octree.cpp">
+      <Filter>Octree</Filter>
+    </ClCompile>
+    <ClCompile Include="Octree\Octnode.cpp">
+      <Filter>Octree</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Contact Generators\ParticleNonstiffRodContactGenerator.cpp">
+      <Filter>Particle Contact Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Contact Generators\ParticlePinContactGenerator.cpp">
+      <Filter>Particle Contact Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="Core.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Particle Contact Generators\ParticleTearableCableContactGenerator.cpp">
+      <Filter>Particle Contact Generators</Filter>
+    </ClCompile>
+    <ClCompile Include="RigidBody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CollisionTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Contact.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ContactResolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
