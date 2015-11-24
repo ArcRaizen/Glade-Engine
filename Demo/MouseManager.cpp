@@ -49,6 +49,7 @@ void MouseManager::MousePress(int button, int state, int x, int y)
 		isDragging = false;
 		glutSetCursor(GLUT_CURSOR_NONE);
 		Arcball::Click(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
+		glutWarpPointer(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
 	}
 	else
 	{

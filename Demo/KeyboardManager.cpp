@@ -1,6 +1,7 @@
 #include "KeyboardManager.h"
 
 bool KeyboardManager::keys[128];	// 124 keys + 4 arrow keys
+bool KeyboardManager::prevKeys[128];
 bool KeyboardManager::isPaused = false;
 
 KeyboardManager::KeyboardManager(void)
@@ -19,6 +20,12 @@ void KeyboardManager::Init()
 	glutSpecialUpFunc(KeyboardManager::SpecialKeyUp);
 }
 
+void KeyboardManager::Update()
+{
+	for(unsigned int i = 0; i < 128; ++i)
+		prevKeys[i] = keys[i];
+}
+
 // Is a specific key being pressed down?
 bool KeyboardManager::IsKeyPressed(int keyIndex)
 {
@@ -29,6 +36,21 @@ bool KeyboardManager::IsKeyPressed(int keyIndex)
 	return false;
 }
 
+bool KeyboardManager::WasKeyPressedThisFrame(int keyIndex)
+{
+	if(keyIndex >= 0 && keyIndex < 128)
+		return keys[keyIndex] && !prevKeys[keyIndex];
+
+	return false;
+}
+bool KeyboardManager::WasKeyReleasedThisFrame(int keyIndex)
+{
+	if(keyIndex >= 0 && keyIndex < 128)
+		return !keys[keyIndex] && prevKeys[keyIndex];
+
+	return false;
+}
+
 void KeyboardManager::KeyUp(unsigned char keyIndex, int x, int y)
 {
 	keys[keyIndex] = false;
@@ -36,7 +58,7 @@ void KeyboardManager::KeyUp(unsigned char keyIndex, int x, int y)
 
 void KeyboardManager::KeyDown(unsigned char keyIndex, int x, int y)
 {
-	keys[keyIndex] = true;
+ 	keys[keyIndex] = true;
 
 	if(keyIndex == 'p')
 		isPaused = !isPaused;

@@ -150,6 +150,9 @@
     <ClInclude Include="ContactResolver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ContactBatch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Particle.cpp">

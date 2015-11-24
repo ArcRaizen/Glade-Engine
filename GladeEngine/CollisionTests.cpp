@@ -494,7 +494,7 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 	m21 *= det1;
 	m22 *= det1;
 	int cnum = 0;	// number of Contact points found
-	for(unsigned int i = 0; i < n; ++i)
+  	for(unsigned int i = 0; i < n; ++i)
 	{
 		gFloat k5 = (m22 * (ret[i*2] - c1)) - (m12 * (ret[i*2+1] - c2));
 		gFloat k6 = -(m21 * (ret[i*2] - c1)) + (m11 * (ret[i*2+1] - c2));
@@ -535,9 +535,9 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 			//contacts++;
 		}
 	}
-	contacts->SetNewContact(b1->attachedBody, b2->attachedBody, 1.0f, 0.0f, normal, contactPoint*(1.0f/(gFloat)cnum), depths/4);
+	contacts->SetNewContact(b1->attachedBody, b2->attachedBody, 0.2f, 0.5f, normal, contactPoint*(1.0f/(gFloat)cnum), depths/(gFloat)cnum);
 	//return cnum;
-	return 1;
+   	return 1;
 }
 int CollisionTests::BoxCylinderTest(Collider* _a, Collider* _b, Contact* contacts)
 {

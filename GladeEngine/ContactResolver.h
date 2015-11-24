@@ -2,8 +2,8 @@
 #ifndef GLADE_CONTACT_RESOLVER_H
 #define GLADE_CONTACT_RESOLVER_H
 
-#ifndef GLADE_CONTACT_H
-#include "Contact.h"
+#ifndef GLADE_CONTACT_BATCH_H
+#include "ContactBatch.h"
 #endif
 
 namespace Glade {
@@ -17,11 +17,11 @@ public:
 	void SetIterations(unsigned int iIter, unsigned int pIter);
 	void SetEpsilon(gFloat impEp, gFloat penEp);
 
-	void ResolveContacts(Contact* contactArray, unsigned int numContacts);
+	void ResolveContacts(ContactBatch* contactBatch);
 
 protected:
-	void ResolveImpulse(Contact* contactArray, unsigned int numContacts);
-	void ResolveInterpenetration(Contact* contactArray, unsigned int numContacts);
+	void ResolveImpulse(ContactBatchNode* contactBatch, unsigned int numContacts);
+	void ResolveInterpenetration(ContactBatchNode* contactBatch, unsigned int numContacts);
 
 public:
 	bool IsValid()

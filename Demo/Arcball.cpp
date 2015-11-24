@@ -1,20 +1,16 @@
 #include "Arcball.h"
 
-Vector startVec;
-Vector endVec;
-float adjustWidth = 1.0f;
-float adjustHeight = 1.0f;
+Vector Arcball::startVec;
+Vector Arcball::endVec;
+float Arcball::adjustWidth = 1.0f;
+float Arcball::adjustHeight = 1.0f;
 
 
-Arcball::Arcball(float width, float height)
+void Arcball::Init(float width, float height)
 {
 	adjustWidth = 1.0f / (width * 0.5f);
 	adjustHeight = 1.0f / (height * 0.5f);
-}
-
-
-Arcball::~Arcball()
-{
+	startVec = endVec = Vector(0.0f, 0.0f, 1.0f);
 }
 
 // Take coordinates of mouse on screen and convert to imaginary 3D Sphere with radius 1 at center of screen
@@ -56,7 +52,7 @@ Quaternion Arcball::Drag(int x, int y)
 	Quaternion q(startVec, endVec);
 
 	// Set current mouse coordinates to start of next drag
-	//startVec = endVec;
+//	startVec = endVec;
 	glutWarpPointer(WINDOW_WIDTH/2, WINDOW_HEIGHT/2);
 
 	return q;

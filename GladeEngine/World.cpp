@@ -2,9 +2,10 @@
 
 using namespace Glade;
 
-World::World(unsigned int maxContacts_, unsigned int iterations) : contactResolver(iterations), maxContacts(maxContacts_), timeAccumulator(0.0f)
+World::World(unsigned int maxContacts_, unsigned int iterations, Vector size/*=Vector(1000.0f,1.000.0f,1000.0f)*/) : 
+			contactResolver(iterations), maxContacts(maxContacts_), worldSize(size), timeAccumulator(0.0f)
 {
-	contacts = new Contact[maxContacts];
+	contacts = new Contact[4];
 	calculateIterations = (iterations == 0);
 
 	numBuckets = 1000;
@@ -27,7 +28,7 @@ unsigned int World::GenerateContacts()
 {
 	unsigned int limit = maxContacts;
 	int used;
-	Contact* nextContact = contacts;
+	static int tests = 0;
 
 // ~~~~ GENERATE CONTACTS VIA COLLISION DETECTION ~~~~
 	std::vector<Object*>* bucket;
@@ -43,6 +44,35 @@ unsigned int World::GenerateContacts()
 		{
 			for(unsigned int j = i+1; j < bucket->size(); ++j)
 			{
+				// Find correct ContactBatch (if it exists) to add possible Contact to
+				// If correct ContactBatch does not exist, create it.
+				// If both Objects already collided (from a previous bucket), ignore them
+				int batch1 = -1, batch2 = -1;
+				unsigned int result;
+				ContactBatch* batch = nullptr;
+				for(unsigned int k = 0; k < contactBatches.size(); ++k)
+				{
+					result = contactBatches[k]->ContainsRigidBodies((*bucket)[i]->GetID(), (*bucket)[j]->GetID());
+					
+					// Batch found that contains both Objects already
+					// Skip this pair of Objects, it was already tested previously
+					if(result == 2)
+						goto SkipPair;
+					// Only other way to break out properly is to break here instead of 'goto'
+					// then test for result==2 after end of this loop and break there as well
+					// However, this creates a conditional check EVERY time I DON'T find this condition
+					// which is tons of extra overhead that does not need to exist if I use 'goto'
+					// So FUCK IT!
+
+
+					// Batch found that contains one of the Objects
+					if(result == 1)
+					{
+						if(batch1 == -1) batch1 = i;
+						else			 batch2 = i;
+					}
+				}
+
 				// If the AABB intersect, do more rigorous testing (actual collider tests)
 				if(CollisionTests::AABBTest((*bucket)[i]->GetBoundingBox(), (*bucket)[j]->GetBoundingBox()))
 				{
@@ -65,18 +95,36 @@ unsigned int World::GenerateContacts()
 							//if(!aColliders[a]->QueryCollisionMask(TEST) || !bColliders[b]->QueryCollisionMask(TEST2)) continue;
 
 							// No pre-set reason why Colliders cannot collide - Actually test for intersection now
-							used = CollisionTests::TestCollision(aColliders[a], bColliders[b], nextContact);							
+							used = CollisionTests::TestCollision(aColliders[a], bColliders[b], contacts);							
 							limit -= used;
-							nextContact += used;
 
 							if(used)
 							{
-								return used;
+								// Need to create new ContactBatch
+								if(batch1 == -1)
+								{
+									batch = new ContactBatch();
+									contactBatches.push_back(batch);
+								}
+								// Need to MERGE two ContactBatches
+								else if(batch2 != -1)
+								{
+									contactBatches[batch1]->MergeBatch(contactBatches[batch2]);
+									contactBatches.erase(contactBatches.begin() + batch2);
+									batch = contactBatches[batch1];
+								}
+
+
+								// Add generated Contacts to ContactBatch
+								for(unsigned int l = 0; l < used; ++l)
+									batch->AddContact(contacts[l]);
+								//return used;
 							}
 						}
 					}
 				}
 			}
+SkipPair:	;// oh god, it feels so dirty
 		}
 	}
 
@@ -128,7 +176,9 @@ void World::PhysicsUpdate(gFloat dt)
 		{
 			if(calculateIterations)
 				contactResolver.SetIterations(usedContacts*3);
-			contactResolver.ResolveContacts(contacts, usedContacts);
+			for(unsigned int i = 0; i < contactBatches.size(); ++i)
+				contactResolver.ResolveContacts(contactBatches[i]);
+			contactBatches.clear();
 		}
 
 		// Now we have spent one frame of time
@@ -139,31 +189,21 @@ void World::PhysicsUpdate(gFloat dt)
 #pragma region Spatial Hash
 int World::Hash(Vector v)
 {
+	/*
 	int x = (int)((v.x<0 && v.x>-5) ? v.x-5.0f : v.x) / cellSize;
 	int y = (int)((v.y<0 && v.y>-5) ? v.y-5.0f : v.y) / cellSize;
 	int z = (int)((v.z<0 && v.z>-5) ? v.z-5.0f : v.z) / cellSize;
 	return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) % numBuckets;
-
-	/*
-		PROBLEM!!!!!
-		-4.99 <-> 4.99 map to 0
-		5 <-> 9.99 map to 1
-		-9.99 <-> 5 map to -1
-		NEED TO USE POSTIVE POSITIONS ONLY
-		NOTHING IN THE WORLD CAN BE NEGATIVE
 	*/
+
+	int x = (int)(v.x/* + worldSize.x/2*/) / cellSize;
+	int y = (int)(v.y/* + worldSize.y/2*/) / cellSize;
+	int z = (int)(v.z/* + worldSize.z/2*/) / cellSize;
+	return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) % numBuckets;
 }
 
-void World::ClearHash()
+std::vector<int> World::GetHashIndices(Object* o)
 {
-	for(int i = 0; i < numBuckets; ++i)
-		delete hashTable[i];
-	hashIndices.clear();
-}
-
-void World::AddToHash(Object* o)
-{
-	int hIndex;
 	std::vector<int> indices;
 
 	// Calculate number of cells between BoundingBox min/max
@@ -178,15 +218,30 @@ void World::AddToHash(Object* o)
 		for(int y = 0; y <= diffY; ++y)
 		{
 			for(int z = 0; z <= diffZ; ++z)
-			{
-				hIndex = Hash(bounds.min + Vector(x*cellSize, y*cellSize, z*cellSize));
-				indices.push_back(hIndex);
-				if(hashTable[hIndex] == nullptr)
-					hashTable[hIndex] = new std::vector<Object*>;
-				hashTable[hIndex]->push_back(o);
-				hashIndices.insert(hIndex);
-			}
+				indices.push_back(Hash(bounds.min + Vector(x*cellSize, y*cellSize, z*cellSize)));
 		}
+	}
+
+	return indices;
+}
+
+void World::ClearHash()
+{
+	for(int i = 0; i < numBuckets; ++i)
+		delete hashTable[i];
+	hashIndices.clear();
+}
+
+void World::AddToHash(Object* o)
+{
+	std::vector<int> indices = GetHashIndices(o);
+
+	for(unsigned int i = 0; i < indices.size(); ++i)
+	{
+		if(hashTable[indices[i]] == nullptr)
+			hashTable[indices[i]] = new std::vector<Object*>;
+		hashTable[indices[i]]->push_back(o);
+		hashIndices.insert(indices[i]);
 	}
 
 	// Save the list of cells/indices in hash intersected by this Object

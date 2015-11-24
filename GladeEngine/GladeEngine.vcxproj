@@ -73,6 +73,7 @@
   <ItemGroup>
     <ClInclude Include="Collider.h" />
     <ClInclude Include="Contact.h" />
+    <ClInclude Include="ContactBatch.h" />
     <ClInclude Include="ContactResolver.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="Glade.h" />

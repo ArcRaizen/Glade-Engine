@@ -12,7 +12,10 @@ public:
 	~KeyboardManager(void);
 
 	static void Init();
+	static void Update();
 	static bool IsKeyPressed(int keyIndex);
+	static bool WasKeyPressedThisFrame(int keyIndex);
+	static bool WasKeyReleasedThisFrame(int keyIndex);
 	static void KeyUp(unsigned char keyIndex, int x, int y);
 	static void KeyDown(unsigned char keyIndex, int x, int y);
 	static void SpecialKeyUp(int keyIndex, int x, int y);
@@ -21,6 +24,7 @@ public:
 	static bool IsPaused();
 
 	static bool keys[128];	// 124 keys + 4 arrow keys
+	static bool prevKeys[128];
 	static bool isPaused;
 
 };

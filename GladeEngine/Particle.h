@@ -53,6 +53,10 @@ protected:
 
 	gFloat	damping;			// Damping/drag appiled to linear motion
 
+	gFloat	motion;				// The amount of motion of the Object.
+	gFloat	motionBias;			// Ratio at which an Object's motion this frame is favored compared to previous frames when calculating 
+									// average motion over recent frames
+
 private:
 	std::vector<int> generatorIDs;
 };

@@ -68,8 +68,9 @@ public:
 	Quaternion& NormalizeInPlace();
 	gFloat		DotProduct(const Quaternion& other) const;
 	gFloat		Magnitude() const;
+	void		AddRotation(const Vector& rot, gFloat dt);
 	Matrix		ConvertToMatrix() const;	
-	void		EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi) const;
+	void		EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi, bool solution2=false) const;
 	void		AxisAngle(Vector& v, gFloat& angle);
 	Quaternion& Identity();
 	bool		IsIdentity();

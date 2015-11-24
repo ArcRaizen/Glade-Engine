@@ -22,12 +22,12 @@ namespace Glade {
 class Object
 {
 public:
-	Object() : position(Vector()), acceleration(Vector()), inverseMass(1), motion(0), motionBias(Pow(0.5, PHYSICS_TIMESTEP)), isAwake(true), canSleep(true), useGravity(true), gravity(Vector::GRAVITY), properties(0)
+	Object() : position(Vector()), acceleration(Vector()), inverseMass(1), isAwake(true), canSleep(true), useGravity(true), gravity(Vector::GRAVITY), properties(0), ID(Identification::ID())
 #ifdef TRACK_MASS
 				, mass(1)
 #endif
 	{ }
-	Object(Vector p, Vector a, gFloat iMass, bool ug, Vector grav=Vector()) : position(p), acceleration(a), inverseMass(iMass), motion(0), motionBias(Pow(0.5, PHYSICS_TIMESTEP)), isAwake(true), canSleep(true),  useGravity(ug), gravity(grav), properties(0)
+	Object(Vector p, Vector a, gFloat iMass, bool ug, Vector grav=Vector()) : position(p), acceleration(a), inverseMass(iMass), isAwake(iMass>0?true:false), canSleep(true),  useGravity(ug), gravity(grav), properties(0), ID(Identification::ID())
 #ifdef TRACK_MASS
 																				, mass(iMass == 0 ? G_MAX : ((gFloat)1.0) / iMass)
 #endif
@@ -36,6 +36,10 @@ public:
 
 	virtual bool Update() = 0;				// Do physics
 	virtual void CalcBoundingBox() = 0;		// Calculate tight Axis-Aligned Bounding Box that wholly contains this Object
+
+	bool	operator== (const Object& other) { return ID == other.ID; }
+	bool	operator< (const Object& other) { return ID < other.ID; }
+	unsigned int	GetID() { return ID; }
 
 	// Apply a new force to this Object.
 	// Accumulate the new force onto all other forces already applied this frame
@@ -144,14 +148,17 @@ public:
 	void SetHashIndices(std::vector<int> indices) { hashIndices = indices; }
 
 protected:
+	struct Identification
+	{
+		static unsigned int ID() { static unsigned int id = 0; return id++; }
+	};
+	unsigned int ID;
+
 	Vector	position;		// Position of Object in world space
 	Vector	acceleration;	// Linear Acceleration of Object this frame
 	Vector	lastAcceleration;// Linear Acceleration of Object last frame
 	bool	isAwake;		// Object can be put to sleep to avoid being updated by integration function or contact resolution
 	bool	canSleep;		// Is this Object permitted to be put to sleep (bad idea for user-controlled Objects)
-	gFloat	motion;			// The amount of motion of the Object.
-	gFloat	motionBias;		// Ratio at which an Object's motion this frame is favored compared to previous frames when calculating 
-								// average motion over recent frames
 
 #ifdef TRACK_MASS
 	gFloat	mass;			// Mass of the Object

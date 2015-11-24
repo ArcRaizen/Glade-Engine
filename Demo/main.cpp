@@ -21,66 +21,8 @@
 #include <algorithm>
 using namespace std;
 
-int IntersectRectQuad2(gFloat h[2], gFloat p[8], gFloat ret[16])
-{
-	// q and r contain nq and nr coordinate points for current and chopped polygons
-	int nq = 4, nr = 0;
-	gFloat buffer[16];
-	gFloat* q = p;
-	gFloat* r = ret;
-
-	for(unsigned int dir = 0; dir <= 1; ++dir)
-	{	// direction notation: xy[0] = x-axis, xy[1] = y-axis
-		for(int sign = -1; sign <= 1; sign +=2)
-		{	// chop q along line xy[dir] = sign*h[dir]
-			gFloat* pq = q;
-			gFloat* pr = r;
-			nr = 0;
-			
-			for(int i = nq; i > 0; --i)
-			{	// go through all points in 'q' and all lines between adjacent points
-				if(sign * pq[dir] < h[dir])
-				{	// this point is inside the chopping line
-					pr[0] = pq[0];
-					pr[1] = pq[1];
-					pr += 2;
-					nr++;
-					if(nr & 8)
-					{
-						q = r;
-						goto done;
-					}
-				}
-
-				gFloat* nextQ = (i > 1) ? pq+2 : q;
-				if((sign * pq[dir] < h[dir]) ^ (sign * nextQ[dir] < h[dir]))
-				{	// this line crosses the chopping line
-					pr[1-dir] = pq[1-dir] + (nextQ[1-dir] - pq[1-dir]) / 
-						(nextQ[dir] - pq[dir]) * (sign * h[dir] - pq[dir]);
-					pr[dir] = sign * h[dir];
-					pr += 2;
-					nr++;
-					if(nr & 8)
-					{
-						q = r;
-						goto done;
-					}
-				}
-				pq += 2;
-			}
-			q = r;
-			r = (q == ret) ? buffer : ret;
-			nq = nr;
-		}
-	}
-done:
-	if(q != ret) memcpy(ret, q, nr*2*sizeof(gFloat));
-	return nr;
-}
-
 int window;
 App* app;
-Arcball* arcball;
 char text[30];
 void Init()
 {
@@ -91,31 +33,35 @@ void Init()
 	glLoadIdentity();
 	glOrtho(-WINDOW_WIDTH/WINDOW_HEIGHT, WINDOW_WIDTH/WINDOW_HEIGHT, -1.0f, 1.0f, -1.0f, 1.0f);
 
+/*	Quaternion q1(0,0,0,1), q2(0,0,0,1);
+	Quaternion angVel(PI * (1.0f/60.0f) * 0.5f, PI * (1.0f/60.0f) * 0.5f * -1, 0, 0);
+	gFloat x,y,z,a,b,c;
+	while(true)
+	{
+		q1 = q1 + q1*angVel;
+		q1.EulerAngles(x,y,z);
+		x *= RAD2DEG; y *= RAD2DEG; z *= RAD2DEG;
+
+		q2 = q2 + angVel*q2;
+		q2.EulerAngles(a,b,c);
+		a *= RAD2DEG; b *= RAD2DEG; c *= RAD2DEG;
+
+		int blah = 5; 
+		blah++;
+	}
+	int x1 = 5;
+	x1++;
+*/
+
+	Vector x(5,-3,2), y(0, 7, 1);
+	Matrix yMat = Matrix::SkewSymmetricMatrix(y);
+	Vector z = x.CrossProduct(y);
+	Vector z2 = x * yMat;
+
 	TimerManager::Init();
+	Arcball::Init(WINDOW_WIDTH, WINDOW_HEIGHT);
 	app = new RigidBodyDemo();
-	arcball = new Arcball(WINDOW_WIDTH, WINDOW_HEIGHT);
 	srand(time(NULL));
-
-	gFloat rect[2] = {5, 3};
-	gFloat quad[8] = {2,-1,2,-3,12,-3,12,-1};
-	gFloat ret[16];
-
-	int n = IntersectRectQuad2(rect, quad, ret);
-
-	Matrix m1, m2;
-	m1.Translate(0,0,0);
-	m2.RotateZ(-150*PI/180);
-	m2.Translate(1,3.5,0);
-	BoxCollider* b1 = new BoxCollider(nullptr, Vector(3,3,3));
-	BoxCollider* b2 = new BoxCollider(nullptr, Vector(1,1,1));
-	b1->CalcTransformAndDerivedGeometricData(m1);
-	b2->CalcTransformAndDerivedGeometricData(m2);
-
-//	CollisionTests::TestCollision(b1, b2, nullptr);
-
-
-	int x = 5;
-	x++;
 }
 
 void Resize(int w, int h)
@@ -124,6 +70,7 @@ void Resize(int w, int h)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(-25.0, 25.0, -25.0, 25.0, -50.0, 100.0);
+//	glFrustum(-25.0, 25.0, -25.0, 25.0, 1.0, 100.0);
 	glMatrixMode(GL_MODELVIEW);
 
 	Arcball::Resize(w, h);
@@ -133,11 +80,16 @@ void Update()
 {
 	TimerManager::Update();
 	app->Update((float)TimerManager::lastFrameDuration * 0.001f);
+	KeyboardManager::Update();
 
+	glPushMatrix();
+	glLoadIdentity();
 	sprintf_s(text, "FPS: %f", (float)TimerManager::fps);
+	glColor3f(0.0,0.0,0.0);
 	glRasterPos2f(20.0f, 23.0f);
 	for(int i = 0; text[i] != '\0'; i++)
 		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_10, text[i]);
+	glPopMatrix();
 
 	app->Render();
 }

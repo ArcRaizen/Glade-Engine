@@ -3,7 +3,7 @@
 
 using namespace Glade;
 
-const Vector Vector::GRAVITY = Vector(0.0f, (gFloat)-100.2f, 0.0f);
+const Vector Vector::GRAVITY = Vector(0.0f, (gFloat)-500.2f, 0.0f);
 const Vector Vector::UP = Vector(0.0f, 1.0f, 0.0f);
 const Vector Vector::DOWN = Vector(0.0f, -1.0f, 0.0f);
 const Vector Vector::RIGHT = Vector(1.0f, 0.0f, 0.0f);
@@ -205,12 +205,13 @@ Vector Vector::operator* (const Vector& other) const
 // Angle Between Vectors
 gFloat Vector::operator/ (const Vector& other) const
 {
-	gFloat dot = *this % other;
+/*	gFloat dot = *this % other;
 	gFloat mag1 = VectorMagnitude(*this);
 	gFloat mag2 = VectorMagnitude(other);
-	gFloat cosTheta = dot / (mag1 * mag2) * DEG2RAD;
-
+	gFloat cosTheta = dot / (mag1 * mag2);
 	return ACos(cosTheta);
+*/
+	return ACos((*this % other) / (this->Magnitude() * other.Magnitude()));
 }
 
 // Vector Equality
@@ -404,11 +405,11 @@ bool Vector::IsZero() const
 }
 
 // Eliminate any parameter that may be due to round-off error.
-Vector& Vector::Cleanse()
+Vector& Vector::Cleanse(gFloat epsilon/*=1.0e-5*/)
 {
-	if(Abs(x) < EPSILON)	x = 0.0f;
-	if(Abs(y) < EPSILON)	y = 0.0f;
-	if(Abs(z) < EPSILON)	z = 0.0f;
+	if(Abs(x) < epsilon)	x = 0.0f;
+	if(Abs(y) < epsilon)	y = 0.0f;
+	if(Abs(z) < epsilon)	z = 0.0f;
 	return (*this);
 }
 #pragma endregion Functions

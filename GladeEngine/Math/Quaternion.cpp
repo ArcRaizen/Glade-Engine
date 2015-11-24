@@ -28,8 +28,8 @@ Quaternion::Quaternion(gFloat phi, gFloat theta, gFloat psi)
 	gFloat cosTheta = Cos(theta/2.0),	sinTheta = Sin(theta/2.0);
 	gFloat cosPsi = Cos(psi/2.0),		sinPsi = Sin(psi/2.0);
 
-	x = sinPhi*cosTheta*sinPsi + cosPhi*sinTheta*cosPsi;
-	y = sinPhi*cosTheta*cosPsi - cosPhi*sinTheta*sinPsi;
+	x = sinPhi*cosTheta*cosPsi - cosPhi*sinTheta*sinPsi;
+	y = cosPhi*sinTheta*cosPsi + sinPhi*cosTheta*sinPsi;
 	z = cosPhi*cosTheta*sinPsi - sinPhi*sinTheta*cosPsi;
 	w = cosPhi*cosTheta*cosPsi + sinPhi*sinTheta*sinPsi;
 }
@@ -379,48 +379,69 @@ gFloat Quaternion::Magnitude() const
 	return gFloat(*this);
 }
 
+// Accumulate a rotation in Vector form onto this Quaternion
+// Useful for integration orientation by angular velocity
+void Quaternion::AddRotation(const Vector& rot, gFloat dt)
+{
+	Quaternion q(rot.x * dt * 0.5f, 
+					rot.y * dt * 0.5f, 
+					rot.z * dt * 0.5f,
+					0.0f);
+
+	*this += q * *this;
+}
+
 // Return the corresponding Rotation Matrix of this Quaternion
 Matrix Quaternion::ConvertToMatrix() const
 {
 	gFloat matrix[16] = {
-		1-2*y*y - 2*z*z,	2*x*y - 2*z*w,		2*x*z + 2*y*w,		0.0f,
-		2*x*y + 2*z*w,		1-2*x*x - 2*z*z,	2*y*z - 2*x*w,		0.0f,
-		2*x*z - 2*y*w,		2*y*z + 2*x*w,		1-2*x*x - 2*y*y,	0.0f,
+#ifdef LEFT_HANDED_COORDS
+		1 - 2*y*y - 2*z*z,	2*x*y - 2*z*w,		2*x*z + 2*y*w,		0.0f,
+		2*x*y + 2*z*w,		1 - 2*x*x - 2*z*z,	2*y*z - 2*x*w,		0.0f,
+		2*x*z - 2*y*w,		2*y*z + 2*x*w,		1 - 2*x*x - 2*y*y,	0.0f,
 		0.0f,				0.0f,				0.0f,				1.0f
+#else
+		1- 2*y*y - 2*z*z,	2*x*y + 2*z*w,		2*x*z - 2*y*w,		0.0f,
+		2*x*y - 2*z*w,		1 - 2*x*x - 2*z*z,	2*y*z + 2*x*w,		0.0f,
+		2*x*z + 2*y*w,		2*y*z - 2*x*w,		1 - 2*x*x - 2*y*y,	0.0f,
+		0.0f,				0.0f,				0.0f,				1.0f
+#endif
 	};
 	return Matrix(matrix);
 }
 	
-// Return an array of the Euler Angles represented by this Quaternion
-// http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/
-void Quaternion::EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi) const
+// Return the Euler Angles represented by this Quaternion
+// There are 2 possible ways to represent any orientation with Euler Angles. Set last parameter to true to get the 2nd
+void Quaternion::EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi, bool solution2) const
 {
-	gFloat sqw = w*w;
-    gFloat sqx = x*x;
-    gFloat sqy = y*y;
-    gFloat sqz = z*z;
-	gFloat unit = sqx + sqy + sqz + sqw; // if normalised is one, otherwise is correction factor
-	gFloat test = x*y + z*w;
+	// Derived from calculating Euler Angles from a Matrix when converting
+	// this Quaternion into a Matrix
+	gFloat test = 2*x*z - 2*y*w;
+	gFloat yy = y*y;
+	gFloat xy = x*y;
+	gFloat zw = z*w;
 
-	if (test > 0.499*unit) // singularity at north pole
+	if(test != 1 && test != -1)
 	{
-		theta = 2 * ATan2(x,w);
-		phi = PI/2;
-		psi = 0;
-		return;
+		theta = -ASin(test);
+		if(solution2)
+			theta = PI - theta;
+		gFloat cosTheta = Cos(theta);
+		psi = ATan2((xy+zw)/cosTheta, ((gFloat)0.5f-yy-z*z)/cosTheta);
+		phi = ATan2((y*z+x*w)/cosTheta, ((gFloat)0.5f-x*x-yy)/cosTheta);
 	}
-
-	if (test < -0.499*unit) // singularity at south pole
+	else
 	{
-		theta = -2 * ATan2(x,w);
-		phi = -PI/2;
-		psi = 0;
-		return;
+		psi = 0.0f;
+		phi = ATan2(zw-xy, x*z+y*w);
+		if(test == -1)
+			theta = -(PI / (gFloat)2.0f);
+		else
+		{
+			theta = PI / (gFloat)2.0f;
+			phi = -phi;
+		}
 	}
-
-    theta = ATan2(2*y*w-2*x*z , sqx - sqy - sqz + sqw);
-	phi = ASin(2*test/unit);
-	psi = ATan2(2*x*w-2*y*z , -sqx + sqy - sqz + sqw);
 }
 
 // Convert this Quaternion to corresponding Axis Angle representation (returned via passed-by-reference variables)

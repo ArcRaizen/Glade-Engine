@@ -3,12 +3,12 @@
 
 using namespace Glade;
 
-Particle::Particle() :Object(Vector(), Vector(), 1, false), damping(0.01)
+Particle::Particle() :Object(Vector(), Vector(), 1, false), damping(0.01), motion(30.0f), motionBias(Pow(0.5, PHYSICS_TIMESTEP))
 {
 	radius = 1;
 }
 
-Particle::Particle(Vector pos, Vector vel, Vector accel, gFloat damp, gFloat iMass, gFloat rad, bool ug, Vector grav) : Object(pos, accel, iMass, ug, grav), damping(damp)
+Particle::Particle(Vector pos, Vector vel, Vector accel, gFloat damp, gFloat iMass, gFloat rad, bool ug, Vector grav) : Object(pos, accel, iMass, ug, grav), damping(damp), motion(30.0f), motionBias(Pow(0.5, PHYSICS_TIMESTEP))
 #ifndef VERLET
 																										, velocity(vel), velocityModified(false)
 #else
@@ -66,10 +66,10 @@ bool Particle::Update()
 	if(canSleep)
 	{
 		motion = (motionBias * motion) + ((1 - motionBias) * velocity.DotProduct(velocity));
-		if(motion < sleepEPSILON)
+		if(motion < particleSleepEpsilon)
 			SetAwake(false);
-		else if(motion > 10 * sleepEPSILON)
-			motion = 10 * sleepEPSILON;
+		else if(motion > 10 * particleSleepEpsilon)
+			motion = 10 * particleSleepEpsilon;
 	}
 	return true;
 }
@@ -93,7 +93,7 @@ void Particle::SetAwake(bool awake/*=true*/)
 	if(awake)
 	{
 		isAwake = true;
-		motion = sleepEPSILON * 2.0f;	// Add motion to prevent it immediately falling asleep
+		motion = particleSleepEpsilon * 2.0f;	// Add motion to prevent it immediately falling asleep
 	}
 	else
 	{

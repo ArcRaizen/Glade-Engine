@@ -9,7 +9,6 @@
 #include "ContactResolver.h"
 #include "CollisionTests.h"
 #include <algorithm>
-#include <set>
 #include <map>
 
 namespace Glade {
@@ -19,7 +18,7 @@ namespace Glade {
 class World
 {
 public:
-	World(unsigned int maxContacts_, unsigned int iterations=0);
+	World(unsigned int maxContacts_, unsigned int iterations=0, Vector size=Vector(1000.0f,1000.0f,1000.0f));
 	~World();
 
 	unsigned int GenerateContacts();
@@ -48,6 +47,7 @@ protected:
 
 	// List of all Contacts that occured and are processed each frame
 	Contact* contacts;
+	std::vector<ContactBatch*> contactBatches;
 
 	bool calculateIterations;
 	unsigned int maxContacts;
@@ -58,6 +58,7 @@ protected:
 
 // ~~~~ SPATIAL HASH ~~~~
 	int						Hash(Vector v);
+	std::vector<int>		GetHashIndices(Object* o);
 	void					ClearHash();
 	void					AddToHash(Object* o);
 	void					UpdateHashedObject(Object* o);
@@ -69,6 +70,13 @@ protected:
 	std::set<int>			hashIndices;
 	int						numBuckets;
 	int						cellSize;
+	Vector					worldSize;		// There is an issue with Spatial Hashing in that the hashing algorithm will not work properly for negative positions.
+											// It will return negative indices for negative positions, which will error when attempting to place/locate objects in the hash.
+											// To resolve this, a "Maximum Size" of the world is to be given, and all positions will be offset by half that size when being hashed
+											// so that real positions from -worldSize/2 -> worldSize/2 will be valid.
+											// This way, objects can be located at (-100, 50, 0) instead of having to have everything shifted several hundred units positive.
+											// Multiple options for what actions to take when an Object exceeds this "Maximum Size" of the world will be provided and can be
+											// swapped between with pre-processor defined macros in "Core.h"
 };
 }	// namespace
 #endif	// GLADE_WORLD_H

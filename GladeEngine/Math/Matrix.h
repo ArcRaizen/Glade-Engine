@@ -24,13 +24,13 @@ class Matrix
 public:
 
 	// Constructors
-	Matrix(bool _3x3=false);
-	Matrix(gFloat components[], bool _3x3=false);
-	Matrix(gFloat mat[][4], bool _3x3=false);
-	Matrix(const Quaternion& q, bool _3x3=false);
-	Matrix(gFloat angle, const Vector& axis, bool _3x3=false);
-	Matrix(gFloat phi, gFloat theta, gFloat psi, bool _3x3=false);
-	Matrix(Vector* trans, Quaternion* q, Vector* scale, bool _3x3=false);
+	Matrix();
+	Matrix(gFloat components[]);
+	Matrix(gFloat mat[][4]);
+	Matrix(const Quaternion& q);
+	Matrix(gFloat angle, const Vector& axis);
+	Matrix(gFloat phi, gFloat theta, gFloat psi);
+	Matrix(Vector* trans, Quaternion* q, Vector* scale);
 private:
 	Matrix(gFloat literallyUseless);
 public:
@@ -63,7 +63,9 @@ public:
 	void	InvertInPlace3();
 	void	InvertInPlace4();
 	Matrix	Transpose() const;
+	Matrix	Transpose3() const;
 	Matrix& TransposeInPlace();
+	Matrix& Transpose3InPlace();
 	void	EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi, bool solution2=false) const;
 	void	Decompose(Vector& scale, Quaternion& rot, Vector& trans);
 	void	ComposeTransformationMatrix(Vector* trans, Quaternion* q, Vector* scale);
@@ -75,7 +77,6 @@ public:
 	Vector	Multiply3(const Vector& v) const;
 	Matrix	MultiplyInverse3(const Matrix& mat) const;
 	Vector	MultiplyInverse3(const Vector& v) const;
-	void	SetIs3x3(bool _3x3);
 
 	// Transformations
 	void Translate(const Vector& v);
@@ -103,7 +104,7 @@ public:
 	static Matrix Ortho(gFloat width, gFloat height, gFloat zNear, gFloat zFar);
 
 	// Inverse Inertia Tensors
-	static Matrix CuboidInverseInertiaTensor(gFloat mass, Vector halfWidths);
+	static Matrix CuboidInverseInertiaTensor(gFloat mass, Vector fullWidths);
 	static Matrix SphereInverseInertiaTensor(gFloat mass, gFloat radius);
 	static Matrix HollowSphereInverseInertiaTensor(gFloat mass, gFloat radius);
 	static Matrix CylinderInverseInertiaTensor(gFloat mass, gFloat height, gFloat radius);
@@ -122,11 +123,6 @@ private:
 		gFloat m[4][4];
 		gFloat mArray[16];
 	};
-
-	// There is only 1 Matrix class, but if this is set to true,
-	// the Matrix will overwrite any Translational component(s)
-	// in the 4th row (and I guess perspectives stuff in the 4th column)
-	bool is3x3;
 
 public:
 	const static Matrix INFINITE_MASS_INERTIA_TENSOR;

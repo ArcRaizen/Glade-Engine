@@ -77,7 +77,7 @@ public:
 	gFloat  SquaredMagnitude() const;
 	void	Zero();
 	bool	IsZero() const;
-	Vector& Cleanse();
+	Vector& Cleanse(gFloat epislon=1.0e-5);
 
 	// Static Functions
 	static Vector VectorAddition(const Vector& v1, const Vector& v2);

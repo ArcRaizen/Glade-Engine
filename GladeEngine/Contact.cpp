@@ -30,7 +30,7 @@ void Contact::ResolveImpulse(Vector (&deltaVel)[2], Vector (&deltaAngVel)[2])
 	Vector impulse = contactImpulse * contactToWorld;
 
 	// Splie impulse into linear and rotational components
-	Vector impulsiveTorque = b1ContactPoint.CrossProduct(impulse);
+	Vector impulsiveTorque = impulse.CrossProduct(b1ContactPoint);
 	deltaAngVel[0] = impulsiveTorque * b1->GetInverseInertiaTensorWorld();
 	deltaVel[0] = impulse * b1->GetInverseMass();
 
@@ -41,7 +41,9 @@ void Contact::ResolveImpulse(Vector (&deltaVel)[2], Vector (&deltaAngVel)[2])
 	if(b2 != nullptr)
 	{
 		impulsiveTorque = b2ContactPoint.CrossProduct(impulse);
+		//impulsiveTorque = impulse.CrossProduct(b2ContactPoint);
 		deltaAngVel[1] = impulsiveTorque * b2->GetInverseInertiaTensorWorld();
+	//	deltaAngVel[1] *= 3.14159/180.0f;
 		deltaVel[1] = impulse * -b2->GetInverseMass();
 
 		b2->ForceAddVelocity(deltaVel[1]);
@@ -113,7 +115,7 @@ void Contact::ResolveInterpenetration(Vector (&deltaPos)[2], Vector (&deltaOrien
 		if(angularMove[i] == 0)
 			deltaOrient[i].Zero();
 		else // Work out the direction to rotate
-			deltaOrient[i] = (relativeContactPoint[i].CrossProduct(normal) * bodies[i]->GetInverseInertiaTensorWorld()) * (angularMove[i] / angularInertia[i]);
+			deltaOrient[i] = (normal.CrossProduct(relativeContactPoint[i]) * bodies[i]->GetInverseInertiaTensorWorld()) * (angularMove[i] / angularInertia[i]);
 		
 		// Velocity change is just linear movement along Contact normal
 		deltaPos[i] = normal * linearMove[i];
@@ -137,51 +139,49 @@ void Contact::CalculateInternals()
 	CalculateContactBasis();
 
 	// Calculate relative position of Contact Point to each RigidBody
-	b1ContactPoint = point - b1->GetPosition();
-	if(b2 != nullptr)	b2ContactPoint = point - b2->GetPosition();
+	b1ContactPoint = (point - b1->GetPosition()).Cleanse();
+	if(b2 != nullptr)	b2ContactPoint = (point - b2->GetPosition()).Cleanse();
 
 	// Calculate relative velocity of RigidBodies at Contact Point
-	relativeVelocity = CalculateLocalVelocity(1);
+  	relativeVelocity = CalculateLocalVelocity(1);
 	if(b2 != nullptr) relativeVelocity -= CalculateLocalVelocity(2);
 
 	// Calculate desired change in velocity to resolve Contact
 	CalculateDesiredDeltaVelocity();
 }
-
 inline
 void Contact::CalculateContactBasis()
 {
 	Vector tangent1, tangent2;
-	if(Abs(normal.x) > Abs(normal.y))
-	{
-		// Scaling factor to ensure results are normalized
-		const gFloat s = (gFloat)1.0f / Sqrt(normal.z*normal.z + normal.x*normal.x);
+	if(Abs(normal.y) > Abs(normal.x))
+	{	// Assuming world X-Axis as second axis
+		const gFloat s = (gFloat)1.0f / Sqrt(normal.z*normal.z + normal.y*normal.y);
+		
+		// New Z-Axis (z = x.Cross(y))
+		tangent2.x = 0;
+		tangent2.y = -normal.z * s;
+		tangent2.z = normal.y * s;
 
-		// New Z-axis - at a right angle to world Y-axis
-		tangent1.x = normal.z * s;
-		tangent1.y = 0;
-		tangent1.z = -normal.x * s;
-
-		// New Y-Axis - at a right angle to new X- and Z- axes
-		tangent2.x = normal.y * tangent1.x;
-		tangent2.y = normal.z * tangent1.x - normal.x * tangent1.z;
-		tangent2.z = -normal.y * tangent1.x;
+		// New X-Axis (x = y.Cross(z))
+		tangent1.x = normal.y * tangent2.z;
+		tangent1.y = normal.z * tangent2.x - normal.x*tangent2.z;
+		tangent1.z = -normal.y * tangent2.x;
 	}
 	else
-	{
-		const gFloat s = (gFloat)1.0f / Sqrt(normal.z*normal.z + normal.y*normal.y);
+	{	// Assuming world Z-Axis as second axis
+		const gFloat s = (gFloat)1.0f / Sqrt(normal.z*normal.z + normal.x*normal.x);
 
-		// New Z-axis - at a right angle to World X-axis
-		tangent1.x = 0;
-		tangent1.y = -normal.z * s;
-		tangent1.z = normal.y * s;
+		// New Z-Axis (z = x.Cross(y))
+		tangent2.x = -normal.z * s;
+		tangent2.y = 0;
+		tangent2.z = normal.x * s;
 
-		// New Y-axis - at a right angle to new X- and Z- axes
-		tangent2.x = normal.y * tangent1.z - normal.z * tangent1.y;
-		tangent2.y = -normal.x * tangent1.z;
-		tangent2.z = normal.x * tangent1.y;
+		// New X-Axis (x = (y.Cross(z))
+		tangent1.x = normal.y * tangent2.z;
+		tangent1.y = normal.z * tangent2.x - normal.x * tangent2.z;
+		tangent1.z = -normal.y * tangent2.x;
 	}
-	contactToWorld.SetBasis(normal, tangent2, tangent1);
+	contactToWorld.SetBasis(tangent1, normal, tangent2);
 }
 
 Vector Contact::CalculateLocalVelocity(unsigned int body)
@@ -190,18 +190,20 @@ Vector Contact::CalculateLocalVelocity(unsigned int body)
 
 	// Get linear velocity of Contact point
 	Vector velocity = rb->GetVelocity() +
-					rb->GetAngularVelocity().CrossProduct(((body == 1) ? b1ContactPoint : b2ContactPoint));
+				//rb->GetAngularVelocity().CrossProduct(((body == 1) ? b1ContactPoint : b2ContactPoint));
+				((body == 1) ? b1ContactPoint.CrossProduct(rb->GetAngularVelocity()) :
+				b2ContactPoint.CrossProduct(rb->GetAngularVelocity()));
 
 	// Turn velocity into contact-coordinates
-	Vector contactVelocity = velocity * contactToWorld.Transpose();
+	Vector contactVelocity = contactToWorld.MultiplyInverse3(velocity);
 
 	// Get velocity due to acceleration this frame
 	Vector accVelocity = rb->GetLastFrameAcceleration() * PHYSICS_TIMESTEP;
 	accVelocity *= contactToWorld.Transpose();
 
-	// Ignore x-component because it is in direction of Contact normal
-	// (In ContactBasis, the x-axis is set to be the direction of the Contact normal)
-	accVelocity.x = 0;
+	// Ignore y-component because it is in direction of Contact normal
+	// (In ContactBasis, the y-axis is set to be the direction of the Contact normal)
+	accVelocity.y = 0;
 	
 	// 
 	return contactVelocity + accVelocity;
@@ -209,7 +211,7 @@ Vector Contact::CalculateLocalVelocity(unsigned int body)
 
 void Contact::CalculateDesiredDeltaVelocity()
 {
-	const static gFloat velocityLimit = (gFloat)0.25f;
+//	const static gFloat velocityLimit = (gFloat)0.25f;
 
 	// Calculate acceleration induced velocity accumulated this frame
 	gFloat velocityFromAccel = (gFloat)0.0f;
@@ -221,19 +223,22 @@ void Contact::CalculateDesiredDeltaVelocity()
 
 	// If the veloctiy is very low, limit restitution
 	gFloat rest = coeffRestitution;
-	if(Abs(relativeVelocity.x) < velocityLimit)
+	if(relativeVelocity.y < (gFloat)0.25f)
 		rest = (gFloat)0.0f;
 
-	desiredDeltaVel = -relativeVelocity.x - (rest * (relativeVelocity.x - velocityFromAccel));
+	desiredDeltaVel = -relativeVelocity.y - (rest * (relativeVelocity.y - velocityFromAccel));
 }
 
 
 Vector Contact::CalcImpulseNoFriction()
 {
 	// Calc change in velocity in world space per unit of impulse
-	Vector deltaVelWorld = b1ContactPoint.CrossProduct(normal);	// torque per unit of impulse
-	deltaVelWorld *= b1->GetInverseInertiaTensorWorld();		// angular velocity per unit of impulse
-	deltaVelWorld = deltaVelWorld.CrossProduct(b1ContactPoint);	// velocity per unit of impulse
+//	Vector deltaVelWorld = b1ContactPoint.CrossProduct(normal);	// torque per unit of impulse
+//	deltaVelWorld *= b1->GetInverseInertiaTensorWorld();		// angular velocity per unit of impulse
+//	deltaVelWorld = deltaVelWorld.CrossProduct(b1ContactPoint);	// velocity per unit of impulse
+	Vector deltaVelWorld = normal.CrossProduct(b1ContactPoint);
+	deltaVelWorld *= b1->GetInverseInertiaTensorWorld();
+	deltaVelWorld = b1ContactPoint.CrossProduct(deltaVelWorld);
 
 	// Get change in velocity in Contact coordinates
 	gFloat deltaVel = deltaVelWorld.DotProduct(normal);
@@ -243,52 +248,52 @@ Vector Contact::CalcImpulseNoFriction()
 
 	if(b2 != nullptr)
 	{
-		deltaVelWorld = b2ContactPoint.CrossProduct(normal);		// torque per unit of impulse
-		deltaVelWorld *= b2->GetInverseInertiaTensorWorld();		// angular velocity per unit of impulse
-		deltaVelWorld = deltaVelWorld.CrossProduct(b2ContactPoint);	// velocity per unit of impulse
-	//	deltaVelWorld = normal.CrossProduct(b2ContactPoint);
-	//	deltaVelWorld *= b2->GetInverseInertiaTensorWorld();
-	//	deltaVelWorld = b2ContactPoint.CrossProduct(deltaVelWorld);
+	//	deltaVelWorld = b2ContactPoint.CrossProduct(normal);		// torque per unit of impulse
+	//	deltaVelWorld *= b2->GetInverseInertiaTensorWorld();		// angular velocity per unit of impulse
+	//	deltaVelWorld = deltaVelWorld.CrossProduct(b2ContactPoint);	// velocity per unit of impulse
+		deltaVelWorld = normal.CrossProduct(b2ContactPoint);
+		deltaVelWorld *= b2->GetInverseInertiaTensorWorld();
+		deltaVelWorld = b2ContactPoint.CrossProduct(deltaVelWorld);
 
 
 		deltaVel += deltaVelWorld.DotProduct(normal);
 		deltaVel += b2->GetInverseMass();
 	}
 
-	return Vector(desiredDeltaVel / deltaVel, 0.0f, 0.0f); 
+	return Vector(0.0f, desiredDeltaVel / deltaVel, 0.0f); 
 }
 
 Vector Contact::CalcImpulseFriction()
 {
-	gFloat inverseMass = b1->GetInverseMass();
-
 	// Built matrix to convert Contact impulse to change in velocity in world coordinates
 	Matrix impulseToTorque = Matrix::SkewSymmetricMatrix(b1ContactPoint);
 	Matrix deltaVelWorld = impulseToTorque;
-	deltaVelWorld *= b1->GetInverseInertiaTensorWorld();
-	deltaVelWorld *= impulseToTorque;
+	deltaVelWorld = b1->GetInverseInertiaTensorWorld() * deltaVelWorld;
+	deltaVelWorld = impulseToTorque * deltaVelWorld;
 	deltaVelWorld *= -1;
+
+	gFloat inverseMass = b1->GetInverseMass();
 
 	if(b2 != nullptr)
 	{
 		impulseToTorque = Matrix::SkewSymmetricMatrix(b2ContactPoint);
 
 		Matrix deltaVelWorld2 = impulseToTorque;
-		deltaVelWorld2 *= b2->GetInverseInertiaTensorWorld();
-		deltaVelWorld2 *= impulseToTorque;
+		deltaVelWorld2 = b2->GetInverseInertiaTensorWorld() * deltaVelWorld2;
+		deltaVelWorld2 = impulseToTorque * deltaVelWorld2;
 		deltaVelWorld2 *= -1;
 
 		// Add to total delta velocity
 		deltaVelWorld += deltaVelWorld2;
+		deltaVelWorld(3,3) = 0;
 
 		// Add to total inverse mass
 		inverseMass += b2->GetInverseMass();
 	}
 
 	// Change of basis to Contact space
-	Matrix deltaVelocity = contactToWorld.Transpose();
-	deltaVelocity *= deltaVelWorld;
-	deltaVelocity *= contactToWorld;
+//	Matrix deltaVelocity = contactToWorld.MultiplyInverse3(deltaVelWorld).Multiply3(contactToWorld);
+	Matrix deltaVelocity = contactToWorld.Multiply3(deltaVelWorld).MultiplyInverse3(contactToWorld);
 
 	// Add in linear velocity change
 	deltaVelocity(0,0) += inverseMass;
@@ -296,27 +301,27 @@ Vector Contact::CalcImpulseFriction()
 	deltaVelocity(2,2) += inverseMass;
 
 	// Invert to get impulse needed per unit velocity
-	Matrix impulseMatrix = deltaVelocity.Inverse3();
+	Matrix impulseMatrix = deltaVelocity.Inverse4();
 
 	// Find the target velocities to kill
-	Vector velKill(desiredDeltaVel, -relativeVelocity.y, -relativeVelocity.z);
+	Vector velKill(-relativeVelocity.x, desiredDeltaVel, -relativeVelocity.z);
 
 	// Find the impulseto kill target velocities
 	Vector contactImpulse = velKill * impulseMatrix;
 
 	// Check for exceeding friction
-	gFloat planarImpulse = Sqrt(contactImpulse.y*contactImpulse.y + contactImpulse.z*contactImpulse.z);
-	if(planarImpulse > contactImpulse.x * friction)
+	gFloat planarImpulse = Sqrt(contactImpulse.x*contactImpulse.x + contactImpulse.z*contactImpulse.z);
+	if(planarImpulse > -contactImpulse.y * friction)
 	{
-		contactImpulse.y /= planarImpulse;
+		contactImpulse.x /= planarImpulse;
 		contactImpulse.z /= planarImpulse;
 
-		contactImpulse.x = deltaVelocity(0,0) +
-					(deltaVelocity(0,1) * friction * contactImpulse.y) +
-					(deltaVelocity(0,2) * friction * contactImpulse.z);
-		contactImpulse.x = desiredDeltaVel / contactImpulse.x;
-		contactImpulse.y *= friction * contactImpulse.x;
-		contactImpulse.z *= friction * contactImpulse.x;
+		contactImpulse.y = (deltaVelocity(0,1) * friction * contactImpulse.x) + 
+					deltaVelocity(1,1) +
+					(deltaVelocity(2,1) * friction * contactImpulse.z);
+		contactImpulse.y = desiredDeltaVel / contactImpulse.y;
+		contactImpulse.x *= -friction * contactImpulse.y;
+		contactImpulse.z *= -friction * contactImpulse.y;
 	}
 
 	return contactImpulse;
@@ -328,10 +333,9 @@ void Contact::MatchAwakeState()
 	if(b2 == nullptr) return;
 
 	bool b1Awake = b1->GetAwake();
-	bool b2Awake = b2->GetAwake();
 
 	// Wake up the sleeping one
-	if(b1Awake ^ b2Awake)
+	if(b1Awake ^ b2->GetAwake())
 	{
 		if(b1Awake)	b2->SetAwake();
 		else		b1->SetAwake();

@@ -8,6 +8,8 @@
 
 namespace Glade {
 // Forward declare ContactResolver class now
+class ContactBatchNode;
+class ContactBatch;
 class ContactResolver;
 
 class Contact
@@ -19,6 +21,8 @@ public:
 	void SetNewContact(RigidBody* b1_, RigidBody* b2_, gFloat res, gFloat f, Vector n, Vector p, gFloat pen);
 
 	friend class ContactResolver;
+	friend class ContactBatchNode;
+	friend class ContactBatch;
 
 protected:
 	void	ResolveImpulse(Vector (&deltaVel)[2], Vector (&deltaAngVel)[2]);
@@ -67,6 +71,7 @@ private:
 	Vector		relativeVelocity;	// Relative Velocity of colliding bodies at point of Contact
 										// Positive means moving toward each other, negative is moving away
 	gFloat		desiredDeltaVel;	// Required change in velocity for Contact to be resolved
+										// Negative pushes the objects appart, positive pushes together
 	Vector		b1ContactPoint;		// World space position of Contact Point relative to b1's Center
 	Vector		b2ContactPoint;		// World space position of Contact Point relative to b2's Center
 };

@@ -73,11 +73,10 @@ namespace Glade
 	#define DEG2RAD PI / 180
 	#define RAD2DEG 180 / PI
 
+	#define LEFT_HANDED_COORDS
+
 	#define CLAMP(val, high, low) ((val < low) ? low : ((val > high) ? high : val))
 	#define MAX(x, y) (x > y ? x : y)
 	#define MIN(x, y) (x < y ? x : y)
-
-	#define VERLET
-	#define LEFT_HANDED_COORDS
 }
 #endif	// GLADE_PRECISION_H

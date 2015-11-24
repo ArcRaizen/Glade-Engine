@@ -7,7 +7,7 @@ OctreeDemo::OctreeDemo() : drawOctree(true), pausePhysics(false)
 	KeyboardManager::Init();
 	glClearColor(0.9f, 0.95f, 1.0f, 1.0f);
 
-	numOrbs = 200;
+	numOrbs = 20;
 	pWorld = new ParticleWorld(numOrbs);
 	octree = new DrawableOctree(Octree::OctreeType::DYNAMIC, true, Vector(0,0,0), 20, 20, 20, 1, 1, 1.0f);
 	srand(time(NULL));

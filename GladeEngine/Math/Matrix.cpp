@@ -6,26 +6,26 @@ using namespace Glade;
 const Matrix Matrix::INFINITE_MASS_INERTIA_TENSOR = Matrix(0.0f);
 
 // Default Constructor - Creates Identity Matrix
-Matrix::Matrix(bool _3x3) : _01(0.0), _02(0.0), _03(0.0), _10(0.0), _12(0.0), _13(0.0), _20(0.0), _21(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0),
-					_00(1.0), _11(1.0), _22(1.0), _33(1.0), is3x3(_3x3)
+Matrix::Matrix() : _01(0.0), _02(0.0), _03(0.0), _10(0.0), _12(0.0), _13(0.0), _20(0.0), _21(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0),
+					_00(1.0), _11(1.0), _22(1.0), _33(1.0)
 { }
 
 // Matrix from array
-Matrix::Matrix(gFloat components[], bool _3x3) : _00(components[0]), _01(components[1]), _02(components[2]), _03(components[3]), 
+Matrix::Matrix(gFloat components[]) : _00(components[0]), _01(components[1]), _02(components[2]), _03(components[3]), 
 									_10(components[4]), _11(components[5]), _12(components[6]), _13(components[7]), 
 									_20(components[8]), _21(components[9]), _22(components[10]), _23(components[11]),
 									_30(components[12]), _31(components[13]), _32(components[14]), _33(components[15])
 { }
 
 // Matrix from 2d array
-Matrix::Matrix(gFloat mat[][4], bool _3x3) : _00(mat[0][0]), _01(mat[0][1]), _02(mat[0][2]), _03(mat[0][3]), 
+Matrix::Matrix(gFloat mat[][4]) : _00(mat[0][0]), _01(mat[0][1]), _02(mat[0][2]), _03(mat[0][3]), 
 									_10(mat[1][0]), _11(mat[1][1]), _12(mat[1][2]), _13(mat[1][3]), 
 									_20(mat[2][0]), _21(mat[2][1]), _22(mat[2][2]), _23(mat[2][3]),
-									_30(mat[3][0]), _31(mat[3][1]), _32(mat[3][2]), _33(mat[3][3]), is3x3(_3x3)
+									_30(mat[3][0]), _31(mat[3][1]), _32(mat[3][2]), _33(mat[3][3])
 { }
 
 // Matrix from Quaternion
-Matrix::Matrix(const Quaternion& q, bool _3x3) : _03(0.0), _13(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0), _33(10.), is3x3(_3x3)
+Matrix::Matrix(const Quaternion& q) : _03(0.0), _13(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0), _33(1.0)
 {
 #ifdef LEFT_HANDED_COORDS
 	_00 = 1 - 2*q.y*q.y - 2*q.z*q.z;		_01 = 2*q.x*q.y - 2*q.z*q.w;			_02 = 2*q.x*q.z + 2*q.y*q.w;
@@ -39,7 +39,7 @@ Matrix::Matrix(const Quaternion& q, bool _3x3) : _03(0.0), _13(0.0), _23(0.0), _
 }
 
 // Matrix from Axis-Angle
-Matrix::Matrix(gFloat angle, const Vector& axis, bool _3x3) : _03(0.0), _13(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0), _33(1.0), is3x3(_3x3)
+Matrix::Matrix(gFloat angle, const Vector& axis) : _03(0.0), _13(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0), _33(1.0)
 {
 	// Normalize vector [xyz] for safety
 	gFloat x=axis.x, y=axis.y, z=axis.z;
@@ -64,7 +64,7 @@ Matrix::Matrix(gFloat angle, const Vector& axis, bool _3x3) : _03(0.0), _13(0.0)
 
 
 // Matrix from Euler Angles
-Matrix::Matrix(gFloat phi, gFloat theta, gFloat psi, bool _3x3) : _03(0.0), _13(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0), _33(1.0), is3x3(_3x3)
+Matrix::Matrix(gFloat phi, gFloat theta, gFloat psi) : _03(0.0), _13(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0), _33(1.0)
 {
 	gFloat cosP_ = Cos(phi),	sinP_ = Sin(phi);
 	gFloat cosT_ = Cos(theta),	sinT_ = Sin(theta);
@@ -82,8 +82,8 @@ Matrix::Matrix(gFloat phi, gFloat theta, gFloat psi, bool _3x3) : _03(0.0), _13(
 }
 
 // Matrix from Affine Transformations
-Matrix::Matrix(Vector* trans, Quaternion* q, Vector* scale, bool _3x3) : _01(0.0), _02(0.0), _03(0.0), _10(0.0), _12(0.0), _13(0.0), _20(0.0), _21(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0),
-																		_00(1.0), _11(1.0), _22(1.0), _33(1.0), is3x3(_3x3)
+Matrix::Matrix(Vector* trans, Quaternion* q, Vector* scale) : _01(0.0), _02(0.0), _03(0.0), _10(0.0), _12(0.0), _13(0.0), _20(0.0), _21(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0),
+																		_00(1.0), _11(1.0), _22(1.0), _33(1.0)
 {
 	if(q != nullptr)
 	{
@@ -132,7 +132,6 @@ Matrix& Matrix::operator= (const Matrix& mat)
 	_10 = mat._10;	_11 = mat._11;	_12 = mat._12;	_13 = mat._13;
 	_20 = mat._20;	_21 = mat._21;	_22 = mat._22;	_23 = mat._23;
 	_30 = mat._30;	_31 = mat._31;	_32 = mat._32;	_33 = mat._33;
-	if(is3x3) { _30 = _31 = _32 = 0.0f; _33 = 1.0f; }
 	return *this;
 }
 
@@ -178,7 +177,6 @@ Matrix& Matrix::operator+= (const Matrix& mat)
 	_10 += mat._10;	 _11 += mat._11;	_12 += mat._12;		_13 += mat._13;
 	_20 += mat._20;	 _21 += mat._21;	_22 += mat._22;		_23 += mat._23;
 	_30 += mat._30;	 _31 += mat._31;	_32 += mat._32;		_33 += mat._33;
-	if(is3x3) { _30 = _31 = _32 = 0.0f; _33 = 1.0f; }
 	return *this;
 }
 
@@ -198,7 +196,6 @@ Matrix& Matrix::operator-= (const Matrix& mat)
 	_10 -= mat._10;	 _11 -= mat._11;	_12 -= mat._12;		_13 -= mat._13;
 	_20 -= mat._20;	 _21 -= mat._21;	_22 -= mat._22;		_23 -= mat._23;
 	_30 -= mat._30;	 _31 -= mat._31;	_32 -= mat._32;		_33 -= mat._33;
-	if(is3x3) { _30 = _31 = _32 = 0.0f; _33 = 1.0f; }
 	return *this;
 }
 
@@ -269,7 +266,6 @@ Matrix&	Matrix::operator*= (const Matrix& mat)
 	_10 = temp[4];	_11 = temp[5];	_12 = temp[6];	_13 = temp[7];
 	_20 = temp[8];	_21 = temp[9];	_22 = temp[10];	_23 = temp[11];
 	_30 = temp[12];	_31 = temp[13];	_32 = temp[14];	_33 = temp[15];
-	if(is3x3) { _30 = _31 = _32 = 0.0f; _33 = 1.0f; }
 	return *this;
 }
 
@@ -477,6 +473,17 @@ Matrix Matrix::Transpose() const
 	return Matrix(newMat);
 }
 
+Matrix Matrix::Transpose3() const
+{
+	gFloat newMat[16] = {
+		_00, _10, _20, _03,
+		_01, _11, _21, _13,
+		_02, _12, _22, _23,
+		_30, _31, _32, _33
+	};
+	return Matrix(newMat);
+}
+
 // Set this Matrix to its Transpose
 Matrix& Matrix::TransposeInPlace()
 {
@@ -490,42 +497,37 @@ Matrix& Matrix::TransposeInPlace()
 	return *this;
 }
 
-// Return an array of the Euler Angles represented by this Matrix
+Matrix& Matrix::Transpose3InPlace()
+{
+	gFloat temp = _01;
+				_01 = _10; _10 = temp;
+	temp = _02; _02 = _20; _20 = temp;
+	temp = _12; _12 = _21; _21 = temp;
+	return *this;
+}
+
+// Return the Euler Angles represented by this Matrix
 // There are 2 possible ways to represent any orientation with Euler Angles. Set last parameter to true to get the 2nd
+// http://staff.city.ac.uk/~sbbh653/publications/euler.pdf
 void Matrix::EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi, bool solution2/*=false*/) const
 {
 #ifdef LEFT_HANDED_COORDS
 	// Limit at theta = +/- 90 (cos(theta)=0 and sin(theta)=1). Stop that here.
 	if(_20 != 1 && _20 != -1)
 	{
-		// asin(sin(theta)) = theta
-		theta = ASin(_20);
-		if(!solution2)
-		{
-			gFloat cosTheta = Cos(theta);
-
-			// atan2f(cos(theta)sin(psi), -(-cos(theta)cos(psi))) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
-			// divide by cos(theta) to handle whether cos(theta) is positive or negative
-			psi = ATan2(-_10/cosTheta, _00/cosTheta);
-
-			// atan2f( -(-sin(phi)cos(theta)), cos(phi)cos(theta)) = atan2f( sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			// divide by cos(theta) to handle whether cos(theta) is positive or negative
-			phi = ATan2(-_21/cosTheta, _22/cosTheta);
-		}
-		else
-		{
-			// 2nd solution, sin(theta) = sin(PI-theta)
+		// -asin(-sin(theta)) = -(-theta) = theta
+		theta = -ASin(_20);
+		if(solution2)
 			theta = PI - theta;
-			gFloat cosTheta = Cos(theta);
+		gFloat cosTheta = Cos(theta);
 
-			// atan2f(cos(theta)sin(psi), -(-cos(theta)cos(psi))) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
-			// divide by cos(theta) to handle whether cos(theta) is positive or negative
-			psi = ATan2(_10/cosTheta, _00/cosTheta);
+		// atan2f(cos(theta)sin(psi), cos(theta)cos(psi)) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
+		// divide by cos(theta) to handle whether cos(theta) is positive or negative
+		psi = ATan2(_10/cosTheta, _00/cosTheta);
 
-			// atan2f( -(-sin(phi)cos(theta)), cos(phi)cos(theta)) = atan2f( sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			// divide by cos(theta) to handle whether cos(theta) is positive or negative
-			phi = ATan2(_21/cosTheta, _22/cosTheta);
-		}
+		// atan2f(sin(phi)cos(theta), cos(phi)cos(theta)) = atan2f( sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
+		// divide by cos(theta) to handle whether cos(theta) is positive or negative
+		phi = ATan2(_21/cosTheta, _22/cosTheta);
 	}
 	else
 	{
@@ -538,56 +540,41 @@ void Matrix::EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi, bool solution2
 			// sin(PI/2) = 1 -> theta = PI/2
 			theta = PI / (gFloat)2.0;
 
-			// sin(phi)sin(PI/2)cos(psi)+cos(phi)sin(psi) -> sin(phi)cos(psi)+cos(phi)sin(psi)
-			// -(sin(phi)sin(psi)-cos(phi)sin(PI/2)cos(psi)) -> -(sin(phi)sin(psi)-cos(phi)cos(psi)) -> (cos(phi)cos(psi)-sin(phi)sin(psi))
-			// atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), cos(phi)cos(psi)-sin(phi)sin(psi)) = atan2f(sin(phi+psi), cos(phi+psi))
+			// sin(phi)sin(PI/2)cos(psi)-cos(phi)sin(psi) -> sin(phi)cos(psi)-cos(phi)sin(psi)
+			// cos(phi)sin(PI/2)cos(psi)+sin(phi)sin(psi) -> cos(phi)cos(psi)+sin(phi)sin(psi)
+			// atan2f(sin(phi)cos(psi)-cos(phi)sin(psi), cos(phi)cos(psi)+sin(phi)sin(psi)) = atan2f(sin(phi-psi), cos(phi-psi))
 			// psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			phi = ATan2(_01, -_02);
+			phi = ATan2(_01, _02);
 		}
 		else
 		{
 			// sin(-PI/2) = -1 -> theta = -PI/2
 			theta = -(PI / (gFloat)2.0);
 
-			// sin(phi)sin(-PI/2)cos(psi)+cos(phi)sin(psi) -> -(-sin(phi)cos(psi)+cos(phi)sin(psi)) -> sin(phi)cos(psi)-cos(phi)sin(psi)
-			// sin(phi)sin(psi)-cos(phi)sin(-PI/2)cos(psi) -> sin(phi)sin(psi)+cos(phi)cos(psi)
-			// atan2f(sin(phi)cos(psi)-cos(phi)sin(psi), sin(phi)sin(psi)+cos(phi)cos(psi)) = atan2f(sin(phi-psi), cos(phi-psi)) -> 
-			// psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			phi = ATan2(-_01, _02);
+			// sin(phi)sin(-PI/2)cos(psi)-cos(phi)sin(psi) -> -sin(phi)cos(psi)-cos(phi)sin(psi)
+			// cos(phi)sin(-PI/2)cos(psi)+sin(phi)sin(psi) -> -sin(phi)cos(psi)+sin(phi)sin(psi)
+			// atan2f(-(-sin(phi)cos(psi)-cos(phi)sin(psi)), -(-cos(phi)cos(psi)+sin(phi)sin(psi))) = atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), cos(phi)cos(psi)-sin(phi)sin(psi) ->
+			// atan2f(sin(phi+psi), cos(phi+psi)) -> psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
+			phi = ATan2(-_01, -_02);
 		}
 	}
 #else
 	// Limit at theta = +/- 90 (cos(theta)=0 and sin(theta)=1). Stop that here.
 	if(_20 != 1 && _20 != -1)
 	{
-		// -asin(-sin(theta)) = -(-theta) = theta
-		theta = -ASin(_20);
-		if(!solution2)
-		{
-			gFloat cosTheta = Cos(theta);
-
-			// atan2f(cos(theta)sin(psi), cos(theta)cos(psi)) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
-			// divide by cos(theta) to handle whether cos(theta) is positive or negative
-			psi = ATan2(_10/cosTheta, _00/cosTheta);
-
-			// atan2f( sin(phi)cos(theta), cos(phi)cos(theta)) = atan2f( sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			// divide by cos(theta) to handle whether cos(theta) is positive or negative
-			phi = ATan2(_21/cosTheta, _22/cosTheta);
-		}
-		else
-		{
-			// 2nd solution, sin(theta) = sin(PI-theta)
+		// asin(sin(theta)) = theta
+		theta = ASin(_20);
+		if(solution2)
 			theta = PI - theta;
-			gFloat cosTheta = Cos(theta);
+		gFloat cosTheta = Cos(theta);
 
-			// atan2f(cos(theta)sin(psi), cos(theta)cos(psi)) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
-			// divide by cos(theta) to handle whether cos(theta) is positive or negative
-			psi = ATan2(_10/cosTheta, _00/cosTheta);
+		// atan2f(-(-cos(theta)sin(psi)), cos(theta)cos(psi)) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
+		// divide by cos(theta) to handle whether cos(theta) is positive or negative
+		psi = ATan2(-_10/cosTheta, _00/cosTheta);
 
-			// atan2f( sin(phi)cos(theta), cos(phi)cos(theta)) = atan2f( sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			// divide by cos(theta) to handle whether cos(theta) is positive or negative
-			phi = ATan2(_21/cosTheta, _22/cosTheta);
-		}
+		// atan2f(-(-sin(phi)cos(theta)), cos(phi)cos(theta)) = atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
+		// divide by cos(theta) to handle whether cos(theta) is positive or negative
+		phi = ATan2(-_21/cosTheta, _22/cosTheta);
 	}
 	else
 	{
@@ -597,25 +584,25 @@ void Matrix::EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi, bool solution2
 
 		if(_20 == -1)
 		{
-			// -sin(PI/2) = -1 -> theta = PI/2
-			theta = PI / (gFloat)2.0;
+			// sin(-PI/2) = -1 -> theta = -PI/2
+			theta = -(PI / (gFloat)2.0);
 
-			// sin(phi)sin(PI/2)cos(psi)-cos(phi)sin(psi) -> sin(phi)cos(psi)-cos(phi)sin(psi)
-			// cos(phi)sin(PI/2)cos(psi)+sin(phi)sin(psi) -> cos(phi)cos(psi)+sin(phi)sin(psi)
-			// atan2f(sin(phi)cos(psi)-cos(phi)sin(psi), cos(phi)cos(psi)+sin(phi)sin(psi)) = atan2f(sin(phi-psi), cos(phi-psi))
-			// psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			phi = ATan2(_01, _02);
+			// sin(phi)sin(-PI/2)cos(psi)+cos(phi)sin(psi) -> cos(phi)sin(psi)-sin(phi)cos(psi)
+			// sin(phi)sin(psi)-cos(phi)sin(-PI/2)cos(psi) -> sin(phi)sin(psi)+cos(phi)cos(psi)
+			// atan2f(-(cos(phi)sin(psi)-sin(phi)cos(psi)), sin(phi)sin(psi)+cos(phi)cos(psi)) -> atan2f(sin(phi)cos(psi)-cos(phi)sin(psi), sin(phi)sin(psi)+cos(phi)cos(psi)) ->
+			// atan2f(sin(phi-psi), cos(phi-psi)) -> psi is set to 0 -> atan2f(sin(phi), cos(psi) = atan2f(tan(phi)) = phi
+			phi = ATan2(-_01, _02);
 		}
 		else
 		{
-			// -sin(-PI/2) = 1 -> theta = -PI/2
-			theta = -(PI / (gFloat)2.0);
+			// sin(PI/2) = 1 -> theta = PI/2
+			theta = PI / (gFloat)2.0;
 
-			// sin(phi)sin(-PI/2)cos(psi)-cos(phi)sin(psi) -> -sin(phi)cos(psi)-cos(phi)sin(psi)
-			// cos(phi)sin(-PI/2)cos(psi)+sin(phi)sin(psi) -> -cos(phi)cos(psi)+sin(phi)sin(psi)
-			// atan2f(-(-sin(phi)cos(psi)-cos(phi)sin(psi)), -(-cos(phi)cos(psi)+sin(phi)sin(psi))) = atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), cos(phi)cos(psi)-sin(phi)sin(psi)) =
+			// sin(phi)sin(PI/2)cos(psi)+cos(phi)sin(psi) -> sin(phi)cos(psi)+cos(phi)sin(psi)
+			// sin(phi)sin(psi)-cos(phi)sin(PI/2)cos(psi) -> sin(phi)sin(psi)-cos(phi)cos(psi)
+			// atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), -(sin(phi)sin(psi)-cos(phi)cos(psi))) -> atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), cos(phi)cos(psi)-sin(phi)sin(psi)) ->
 			// atan2f(sin(phi+psi), cos(phi+psi)) -> psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			phi = ATan2(-_01, -_02);
+			phi = ATan2(_01, -_02);
 		}
 	}
 #endif
@@ -630,12 +617,9 @@ void Matrix::Decompose(Vector& scale, Quaternion& rot, Vector& trans)
 	scale.z = Sqrt(_20*_20 + _21*_21 + _22*_22);
 
 	// Compute Translation component
-	if(!is3x3)
-	{
-		trans.x = _30;
-		trans.y = _31;
-		trans.z = _32;
-	}
+	trans.x = _30;
+	trans.y = _31;
+	trans.z = _32;
 
 	// Compute Rotation component
 	gFloat temp[16] = {
@@ -663,13 +647,13 @@ void Matrix::ComposeTransformationMatrix(Vector* trans, Quaternion* q, Vector* s
 		}
 
 #ifdef LEFT_HANDED_COORDS
+		_00 = (1.0f - (2.0f * (q->y*q->y + q->z*q->z))) * scaleX;	_01 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleX;			_02 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleX;
+		_10 = (2.0f * (q->x*q->y + q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x + q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleY;
+		_20 = (2.0f * (q->x*q->z - q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x + q->y*q->y))) * scaleZ;
+#else
 		_00 = (1.0f - (2.0f * (q->y*q->y + q->z*q->z))) * scaleX;	_01 = (2.0f * (q->x*q->y + q->z*q->w)) * scaleX;			_02 = (2.0f * (q->x*q->z - q->y*q->w)) * scaleX;
 		_10 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x + q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleY;
 		_20 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x + q->y*q->y))) * scaleZ;
-#else
-		_00 = (1.0f - (2.0f * (q->y*q->y - q->z*q->z))) * scaleX;	_01 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleX;			_02 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleX;
-		_10 = (2.0f * (q->x*q->y + q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x - q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleY;
-		_20 = (2.0f * (q->x*q->z - q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x - q->y*q->y))) * scaleZ;
 #endif
 	}
 	else if(scale != nullptr)
@@ -687,7 +671,6 @@ void Matrix::ComposeTransformationMatrix(Vector* trans, Quaternion* q, Vector* s
 		_31 = trans->y;
 		_32 = trans->z;
 	}
-	if(is3x3) { _30 = _31 = _32 = 0.0f; _33 = 1.0f; }
 }
 
 void Matrix::SetBasis(Vector x, Vector y, Vector z)
@@ -696,7 +679,6 @@ void Matrix::SetBasis(Vector x, Vector y, Vector z)
 	_10 = y.x;	_11 = y.y;	_12 = y.z;	_13 = 0.0f;
 	_20 = z.x;	_21 = z.y;	_22 = z.z;	_23 = 0.0f;
 	_30 = 0.0f;	_31 = 0.0f;	_32 = 0.0f;	_33 = 1.0f;
-	is3x3 = true;
 }
 
 // Calculate and return Quaternion representation of this rotation Matrix
@@ -852,11 +834,6 @@ Vector Matrix::MultiplyInverse3(const Vector& v) const
 	y = _10*v.x + _11*v.y + _12*v.z;
 	z = _20*v.x + _21*v.y + _22*v.z;
 	return Vector(x,y,z);
-}
-
-void Matrix::SetIs3x3(bool _3x3)
-{
-	is3x3 = _3x3;
 }
 #pragma endregion
 
@@ -1024,7 +1001,7 @@ Matrix Matrix::SkewSymmetricMatrix(const Vector& v)
 		0.0f, -v.z, v.y, 0.0f, 
 		v.z, 0.0f, -v.x, 0.0f, 
 		-v.y, v.x, 0.0f, 0.0f, 
-		0.0f, 0.0f, 0.0f, 0.0f
+		0.0f, 0.0f, 0.0f, 1.0f
 	};
 	return Matrix(m);
 }
@@ -1196,11 +1173,11 @@ Matrix Matrix::Ortho(gFloat width, gFloat height, gFloat zNear, gFloat zFar)
 }
 
 #pragma region Inverse Inertia Tensors
-Matrix Matrix::CuboidInverseInertiaTensor(gFloat mass, Vector halfWidths)
+Matrix Matrix::CuboidInverseInertiaTensor(gFloat mass, Vector fullWidths)
 {
-	gFloat x2 = halfWidths.x * halfWidths.x;
-	gFloat y2 = halfWidths.y * halfWidths.y;
-	gFloat z2 = halfWidths.z * halfWidths.z;
+	gFloat x2 = fullWidths.x * fullWidths.x;
+	gFloat y2 = fullWidths.y * fullWidths.y;
+	gFloat z2 = fullWidths.z * fullWidths.z;
 	gFloat inertia[16] = {
 		(mass*(y2+z2))/12.0f,	0.0f,					0.0f,					0.0f,
 		0.0f,					(mass*(x2+z2))/12.0f,	0.0f,					0.0f,

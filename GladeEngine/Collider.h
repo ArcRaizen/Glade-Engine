@@ -112,7 +112,7 @@ public:
 
 		// Calc local x-, y-, z- axes of Box Collider
 		u[0] = Vector(transform(0,0), transform(0,1), transform(0,2));
-		u[1] = Vector(transform(1,0), transform(1,1), transform(2,1));
+		u[1] = Vector(transform(1,0), transform(1,1), transform(1,2));
 		u[2] = Vector(transform(2,0), transform(2,1), transform(2,2));
 		if(Abs(u[0].SquaredMagnitude() - 1) > EPSILON) u[0].NormalizeInPlace();
 		if(Abs(u[1].SquaredMagnitude() - 1) > EPSILON) u[1].NormalizeInPlace();
