@@ -25,21 +25,33 @@
     <Filter Include="Particle Contact Generators\Particle System Contact Generator">
       <UniqueIdentifier>{cb0f3592-fba0-436f-b326-1f171d2fe746}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Octree">
+    <Filter Include="Utils">
+      <UniqueIdentifier>{d1a0c736-ebe5-4f5c-a2aa-87b43cc68d9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utils\SmartPointer">
+      <UniqueIdentifier>{3353f83b-89f0-47c5-985b-4b380c42774b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Contacts">
+      <UniqueIdentifier>{357eb1e0-95ef-4d35-ba30-634b98df226f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="System">
+      <UniqueIdentifier>{04a3ad5e-6be4-4b6f-848c-11772452a649}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="System\Graphics">
+      <UniqueIdentifier>{c15edeae-688c-47c0-96c9-d71d03a2bb1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="System\Octree">
       <UniqueIdentifier>{72591383-90c8-42ee-b517-4889004e5056}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="System\Input">
+      <UniqueIdentifier>{3e540ffe-5f48-44e3-8fc1-95a035d1439a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Core.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Glade.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Particle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Precision.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
@@ -114,14 +126,8 @@
     <ClInclude Include="Particle Contact Generators\ParticleSystemPlaneContactGenerator.h">
       <Filter>Particle Contact Generators\Particle System Contact Generator</Filter>
     </ClInclude>
-    <ClInclude Include="Octree\Octree.h">
-      <Filter>Octree</Filter>
-    </ClInclude>
     <ClInclude Include="Object.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Octree\Octnode.h">
-      <Filter>Octree</Filter>
     </ClInclude>
     <ClInclude Include="Particle Contact Generators\ParticleNonstiffRodContactGenerator.h">
       <Filter>Particle Contact Generators</Filter>
@@ -141,17 +147,98 @@
     <ClInclude Include="CollisionTests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Contact.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="World.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ContactResolver.h">
+    <ClInclude Include="Math\Math.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\MathMisc.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Precision.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Assert.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Trace.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Timer.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Utils.h">
+      <Filter>Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="GladeConfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ContactBatch.h">
+    <ClInclude Include="Sleep.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\AABB.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\SmartPointer\ReferenceCounter.h">
+      <Filter>Utils\SmartPointer</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\SmartPointer\SmartPointer.h">
+      <Filter>Utils\SmartPointer</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\SmartPointer\StrongWeakCount.h">
+      <Filter>Utils\SmartPointer</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\SmartPointer\WeakPointer.h">
+      <Filter>Utils\SmartPointer</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Contacts\ContactBatch.h">
+      <Filter>Contacts</Filter>
+    </ClInclude>
+    <ClInclude Include="Contacts\Contact.h">
+      <Filter>Contacts</Filter>
+    </ClInclude>
+    <ClInclude Include="Contacts\ContactResolver.h">
+      <Filter>Contacts</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Application.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Graphics\Direct3D.h">
+      <Filter>System\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Graphics\Vertex.h">
+      <Filter>System\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Camera.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Graphics\GraphicsLocator.h">
+      <Filter>System\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="System\GeometryGenerator.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Graphics\DebugDraw.h">
+      <Filter>System\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Octree\Octnode.h">
+      <Filter>System\Octree</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Octree\Octree.h">
+      <Filter>System\Octree</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Input.h">
+      <Filter>System\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Arcball\Arcball.h">
+      <Filter>System\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="System\KeyCodes.h">
+      <Filter>System\Input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -215,20 +302,11 @@
     <ClCompile Include="Particle Contact Generators\ParticleSystemPlaneContactGenerator.cpp">
       <Filter>Particle Contact Generators\Particle System Contact Generator</Filter>
     </ClCompile>
-    <ClCompile Include="Octree\Octree.cpp">
-      <Filter>Octree</Filter>
-    </ClCompile>
-    <ClCompile Include="Octree\Octnode.cpp">
-      <Filter>Octree</Filter>
-    </ClCompile>
     <ClCompile Include="Particle Contact Generators\ParticleNonstiffRodContactGenerator.cpp">
       <Filter>Particle Contact Generators</Filter>
     </ClCompile>
     <ClCompile Include="Particle Contact Generators\ParticlePinContactGenerator.cpp">
       <Filter>Particle Contact Generators</Filter>
-    </ClCompile>
-    <ClCompile Include="Core.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Particle Contact Generators\ParticleTearableCableContactGenerator.cpp">
       <Filter>Particle Contact Generators</Filter>
@@ -239,14 +317,62 @@
     <ClCompile Include="CollisionTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Contact.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="World.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ContactResolver.cpp">
+    <ClCompile Include="Utils\Assert.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Trace.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\Timer.cpp">
+      <Filter>Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Sleep.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Contacts\ContactBatch.cpp">
+      <Filter>Contacts</Filter>
+    </ClCompile>
+    <ClCompile Include="Contacts\Contact.cpp">
+      <Filter>Contacts</Filter>
+    </ClCompile>
+    <ClCompile Include="Contacts\ContactResolver.cpp">
+      <Filter>Contacts</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Application.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Graphics\Direct3D.cpp">
+      <Filter>System\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Camera.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\GeometryGenerator.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Graphics\GraphicsLocator.cpp">
+      <Filter>System\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Graphics\DebugDraw.cpp">
+      <Filter>System\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Object.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Octree\Octnode.cpp">
+      <Filter>System\Octree</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Octree\Octree.cpp">
+      <Filter>System\Octree</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Input.cpp">
+      <Filter>System\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Arcball\Arcball.cpp">
+      <Filter>System\Input</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

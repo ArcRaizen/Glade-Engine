@@ -1,17 +1,15 @@
 #pragma once
-#include "App.h"
-
 #include "MouseManager.h"
 #include "KeyboardManager.h"
 #include "Orb.h"
 
-class TrebuchetDemo : public App
+class TrebuchetDemo : public Glade::GApplication
 {
 public:
 	TrebuchetDemo();
 	~TrebuchetDemo();
 
-	void Update(float dt);
+	bool Update(float dt);
 	void Draw();
 
 private:

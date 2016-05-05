@@ -1,14 +1,13 @@
 // Global import header
 
-#include "Precision.h"
-#include "Core.h"
-#include "Math\Quaternion.h"
-#include "Math\Matrix.h"
+#include "System\Application.h"
+#include "Math\Math.h"
+#include "Utils\Utils.h"
 #include "Particle.h"
 #include "ParticleWorld.h"
 #include "RigidBody.h"
 #include "World.h"
-#include "Octree\Octree.h"
+#include "System\Octree\Octree.h"
 #include "Particle Contact Generators\ParticleSystemPlaneContactGenerator.h"
 #include "Particle Contact Generators\ParticleCableContactGenerator.h"
 #include "Particle Contact Generators\ParticlePlaneContactGenerator.h"

@@ -5,6 +5,7 @@
 #ifndef GLADE_PARTICLE_CABLE_CONTACT_GENERATOR
 #include "ParticleCableContactGenerator.h"
 #endif
+#include "../Math/MathMisc.h"
 
 namespace Glade { 
 /*

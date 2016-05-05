@@ -39,15 +39,15 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ExecutablePath>$(SolutionDir)GL\x86\bin;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>$(SolutionDir)GL\x86\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)GL\x86\lib;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Utilities\bin\x86;$(SolutionDir)GL\x86\bin;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Inc;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(SolutionDir)GL\x86\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Debug;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x86;$(SolutionDir)GL\x86\lib;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)Demo\Debug\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ExecutablePath>$(SolutionDir)GL\x86\bin;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>$(SolutionDir)GL\x86\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)GL\x86\lib;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Utilities\bin\x86;$(SolutionDir)GL\x86\bin;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Inc;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;$(SolutionDir)GL\x86\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Release;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x86;$(SolutionDir)GL\x86\lib;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)Demo\Debug\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -59,7 +59,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>GladeEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>GladeEngine.lib;d3d11.lib;d3dx11d.lib;D3DCompiler.lib;Effects11.lib;dxerr.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -76,17 +76,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>GladeEngine.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>GladeEngine.lib;d3d11.lib;d3dx11.lib;D3DCompiler.lib;Effects11.lib;dxerr.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="App.h" />
-    <ClInclude Include="Arcball.h" />
     <ClInclude Include="BuoyancyDemo.h" />
     <ClInclude Include="ClothDemo.h" />
     <ClInclude Include="Core.h" />
-    <ClInclude Include="DrawableOctree.h" />
     <ClInclude Include="KeyboardManager.h" />
     <ClInclude Include="MouseManager.h" />
     <ClInclude Include="OctreeDemo.h" />
@@ -97,11 +94,8 @@
     <ClInclude Include="TrebuchetDemo.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="App.cpp" />
-    <ClCompile Include="Arcball.cpp" />
     <ClCompile Include="BuoyancyDemo.cpp" />
     <ClCompile Include="ClothDemo.cpp" />
-    <ClCompile Include="DrawableOctree.cpp" />
     <ClCompile Include="KeyboardManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MouseManager.cpp" />

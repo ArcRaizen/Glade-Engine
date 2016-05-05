@@ -10,7 +10,7 @@ World::World(unsigned int maxContacts_, unsigned int iterations, Vector size/*=V
 
 	numBuckets = 1000;
 	cellSize = 5;
-	hashTable = new std::vector<Object*>*[numBuckets];
+	hashTable = new std::vector<RigidBody*>*[numBuckets];
 	for(int i = 0; i < numBuckets; ++i)
 		hashTable[i] = nullptr;
 }
@@ -31,100 +31,113 @@ unsigned int World::GenerateContacts()
 	static int tests = 0;
 
 // ~~~~ GENERATE CONTACTS VIA COLLISION DETECTION ~~~~
-	std::vector<Object*>* bucket;
+	std::set<RigidBody*> bodies;
+	std::set<std::pair<unsigned int, unsigned int>> testedPairs;
 	std::vector<Collider*> aColliders, bColliders;
+	unsigned int iID, jID;
 	unsigned int aSize, bSize;
-	for(auto iter = hashIndices.begin(); iter != hashIndices.end(); ++iter)
+
+	// Loop through each Object/RigidBody in the World
+	for(auto i = rigidBodies.begin(); i != rigidBodies.end(); ++i)
 	{
-		// Get each bucket that has at least 1 object hashed in it
-		bucket = hashTable[*iter];
+		auto indices = (*i)->GetHashIndices();	// Get the indices of the hash cell it's in
 
-		// Loop through each pair of Objects in a bucket
-		for(unsigned int i = 0; i < bucket->size(); ++i)
+		// Loop through each hash cell it's in
+		for(auto j = indices.begin(); j != indices.end(); ++j)
 		{
-			for(unsigned int j = i+1; j < bucket->size(); ++j)
+			auto bucket = hashTable[*j];	// Get list of Objects/RigidBodies in that cell
+
+			// Loop through each Object/RigidBody in cell, add to master list
+			for(auto k = bucket->begin(); k != bucket->end(); ++k)
+				bodies.insert(*k);
+		}
+
+		// Remove current RigidBody from list
+		bodies.erase(*i);
+		// 'objects' now contains pointer to every Object/RigidBody that *might* collide with current RigidBody
+
+		for(auto j = bodies.begin(); j != bodies.end(); ++j)
+		{
+			iID = (*i)->GetID();
+			jID = (*j)->GetID();
+			if(!testedPairs.insert(std::make_pair((iID<jID?iID:jID), (iID>jID?iID:jID))).second)
+				continue;
+
+			// Find correct ContactBatch (if it exists) to add possible Contact to
+			// If correct ContactBatch does not exist, create it.
+			// If both Objects already collided (from a previous bucket), ignore them
+			int batch1 = -1, batch2 = -1;
+			unsigned int result;
+			ContactBatch* batch = nullptr;
+			for(unsigned int k = 0; k < contactBatches.size(); ++k)
 			{
-				// Find correct ContactBatch (if it exists) to add possible Contact to
-				// If correct ContactBatch does not exist, create it.
-				// If both Objects already collided (from a previous bucket), ignore them
-				int batch1 = -1, batch2 = -1;
-				unsigned int result;
-				ContactBatch* batch = nullptr;
-				for(unsigned int k = 0; k < contactBatches.size(); ++k)
-				{
-					result = contactBatches[k]->ContainsRigidBodies((*bucket)[i]->GetID(), (*bucket)[j]->GetID());
+				result = contactBatches[k]->ContainsRigidBodies(iID, jID);
 					
-					// Batch found that contains both Objects already
-					// Skip this pair of Objects, it was already tested previously
-					if(result == 2)
-						goto SkipPair;
-					// Only other way to break out properly is to break here instead of 'goto'
-					// then test for result==2 after end of this loop and break there as well
-					// However, this creates a conditional check EVERY time I DON'T find this condition
-					// which is tons of extra overhead that does not need to exist if I use 'goto'
-					// So FUCK IT!
-
-
-					// Batch found that contains one of the Objects
-					if(result == 1)
-					{
-						if(batch1 == -1) batch1 = i;
-						else			 batch2 = i;
-					}
-				}
-
-				// If the AABB intersect, do more rigorous testing (actual collider tests)
-				if(CollisionTests::AABBTest((*bucket)[i]->GetBoundingBox(), (*bucket)[j]->GetBoundingBox()))
+				// Batch found that contains both Objects already
+				// There's a triangle of collisions (we have A-B and A-C already, now we found B-C)
+				if(result == 2) 
+				{ batch1 = k; batch = contactBatches[k]; break; }
+				// Batch found that contains one of the Objects
+				else if(result == 1)
 				{
-					// Get Collider(s) of each Object
-					aSize = (*bucket)[i]->GetColliders(aColliders);
-					bSize = (*bucket)[j]->GetColliders(bColliders);
+					if(batch1 == -1) { batch1 = k; batch = contactBatches[k]; }
+					else			 batch2 = k;
+				}
+			}
 
-					// Test all Colliders of each Object against all Colliders of the other
-					for(unsigned int a = 0; a < aSize; ++a)
+			// If the AABB intersect, do more rigorous testing (actual collider tests)
+			// TODO - AABB'S NEARLY IN CONTACT BUT NOT QUITE SHOULD BE ADDED TO CONTACT BATCHES
+			// IN CASE INTERPENETRATION RESOLUTION OF NEARBY CONTACTS ENDS UP AFFECTING THEM 
+			// BY PROXY. CREATE CONTACT WITH NEGATIVE PENETRATION
+			if(CollisionTests::AABBTest((*i)->GetBoundingBox(), (*j)->GetBoundingBox()))
+			{
+				// Get Collider(s) of each Object
+				aSize = (*i)->GetColliders(aColliders);
+				bSize = (*j)->GetColliders(bColliders);
+
+				// Test all Colliders of each Object against all Colliders of the other
+				for(unsigned int a = 0; a < aSize; ++a)
+				{
+					// Collider 'a' must be Enabled
+					if(!aColliders[a]->IsEnabled()) continue;
+
+					for(unsigned int b = 0; b < bSize; ++b)
 					{
-						// Collider 'a' must be Enabled
-						if(!aColliders[a]->IsEnabled()) continue;
+						// Collider 'b' must be Enabled
+						if(!bColliders[b]->IsEnabled()) continue;
 
-						for(unsigned int b = 0; b < bSize; ++b)
+						// Query both Colliders' Collision Masks to ensure these Colliders can collider
+						//if(!aColliders[a]->QueryCollisionMask(TEST) || !bColliders[b]->QueryCollisionMask(TEST2)) continue;
+
+						// No pre-set reason why Colliders cannot collide - Actually test for intersection now
+						used = CollisionTests::TestCollision(aColliders[a], bColliders[b], contacts);							
+						limit -= used;
+
+						if(used)
 						{
-							// Collider 'b' must be Enabled
-							if(!bColliders[b]->IsEnabled()) continue;
-
-							// Query both Colliders' Collision Masks to ensure these Colliders can collider
-							//if(!aColliders[a]->QueryCollisionMask(TEST) || !bColliders[b]->QueryCollisionMask(TEST2)) continue;
-
-							// No pre-set reason why Colliders cannot collide - Actually test for intersection now
-							used = CollisionTests::TestCollision(aColliders[a], bColliders[b], contacts);							
-							limit -= used;
-
-							if(used)
+							// Need to create new ContactBatch
+							if(batch1 == -1)
 							{
-								// Need to create new ContactBatch
-								if(batch1 == -1)
-								{
-									batch = new ContactBatch();
-									contactBatches.push_back(batch);
-								}
-								// Need to MERGE two ContactBatches
-								else if(batch2 != -1)
-								{
-									contactBatches[batch1]->MergeBatch(contactBatches[batch2]);
-									contactBatches.erase(contactBatches.begin() + batch2);
-									batch = contactBatches[batch1];
-								}
-
-
-								// Add generated Contacts to ContactBatch
-								for(unsigned int l = 0; l < used; ++l)
-									batch->AddContact(contacts[l]);
-								//return used;
+								batch = new ContactBatch();
+								contactBatches.push_back(batch);
 							}
+							// Need to MERGE two ContactBatches
+							else if(batch2 != -1)
+							{
+								contactBatches[batch1]->MergeBatch(contactBatches[batch2]);
+								delete contactBatches[batch2];
+								contactBatches.erase(contactBatches.begin() + batch2);
+								batch = contactBatches[batch1];
+							}
+
+
+							// Add generated Contacts to ContactBatch
+							for(unsigned int l = 0; l < used; ++l)
+								batch->AddContact(contacts[l]);
 						}
 					}
 				}
 			}
-SkipPair:	;// oh god, it feels so dirty
 		}
 	}
 
@@ -177,7 +190,12 @@ void World::PhysicsUpdate(gFloat dt)
 			if(calculateIterations)
 				contactResolver.SetIterations(usedContacts*3);
 			for(unsigned int i = 0; i < contactBatches.size(); ++i)
+			{
 				contactResolver.ResolveContacts(contactBatches[i]);
+				delete contactBatches[i];
+			}
+
+			// Clear batches for next frame
 			contactBatches.clear();
 		}
 
@@ -189,28 +207,22 @@ void World::PhysicsUpdate(gFloat dt)
 #pragma region Spatial Hash
 int World::Hash(Vector v)
 {
-	/*
-	int x = (int)((v.x<0 && v.x>-5) ? v.x-5.0f : v.x) / cellSize;
-	int y = (int)((v.y<0 && v.y>-5) ? v.y-5.0f : v.y) / cellSize;
-	int z = (int)((v.z<0 && v.z>-5) ? v.z-5.0f : v.z) / cellSize;
-	return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) % numBuckets;
-	*/
+	unsigned __int64 x = (v.x + worldSize.x/2) / cellSize;
+	unsigned __int64 y = (v.y + worldSize.y/2) / cellSize;
+	unsigned __int64 z = (v.z + worldSize.z/2) / cellSize;
 
-	int x = (int)(v.x/* + worldSize.x/2*/) / cellSize;
-	int y = (int)(v.y/* + worldSize.y/2*/) / cellSize;
-	int z = (int)(v.z/* + worldSize.z/2*/) / cellSize;
 	return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) % numBuckets;
 }
 
-std::vector<int> World::GetHashIndices(Object* o)
+std::set<int> World::GetHashIndices(RigidBody* o)
 {
-	std::vector<int> indices;
+	std::set<int> indices;
 
 	// Calculate number of cells between BoundingBox min/max
 	AABB bounds = o->GetBoundingBox();
-	int diffX = std::floor((((((int)bounds.max.x / cellSize) * cellSize) + cellSize) - bounds.min.x) / cellSize);
-	int diffY = std::floor((((((int)bounds.max.y / cellSize) * cellSize) + cellSize) - bounds.min.y) / cellSize);
-	int diffZ = std::floor((((((int)bounds.max.z / cellSize) * cellSize) + cellSize) - bounds.min.z) / cellSize);
+	int diffX = std::floor((((((int)bounds.maximum.x / cellSize) * cellSize) + cellSize) - bounds.minimum.x) / cellSize);
+	int diffY = std::floor((((((int)bounds.maximum.y / cellSize) * cellSize) + cellSize) - bounds.minimum.y) / cellSize);
+	int diffZ = std::floor((((((int)bounds.maximum.z / cellSize) * cellSize) + cellSize) - bounds.minimum.z) / cellSize);
 
 	// Step between BoundingBox min/max along all 3 axes and hash object into all cells it intersects
 	for(int x = 0; x <= diffX; ++x)
@@ -218,7 +230,7 @@ std::vector<int> World::GetHashIndices(Object* o)
 		for(int y = 0; y <= diffY; ++y)
 		{
 			for(int z = 0; z <= diffZ; ++z)
-				indices.push_back(Hash(bounds.min + Vector(x*cellSize, y*cellSize, z*cellSize)));
+				indices.insert(Hash(bounds.minimum + Vector(x*cellSize, y*cellSize, z*cellSize)));
 		}
 	}
 
@@ -229,32 +241,30 @@ void World::ClearHash()
 {
 	for(int i = 0; i < numBuckets; ++i)
 		delete hashTable[i];
-	hashIndices.clear();
 }
 
-void World::AddToHash(Object* o)
+void World::AddToHash(RigidBody* o)
 {
-	std::vector<int> indices = GetHashIndices(o);
+	std::set<int> indices = GetHashIndices(o);
 
-	for(unsigned int i = 0; i < indices.size(); ++i)
+	for(auto iter = indices.begin(); iter != indices.end(); ++iter)
 	{
-		if(hashTable[indices[i]] == nullptr)
-			hashTable[indices[i]] = new std::vector<Object*>;
-		hashTable[indices[i]]->push_back(o);
-		hashIndices.insert(indices[i]);
+		if(hashTable[*iter] == nullptr)
+			hashTable[*iter] = new std::vector<RigidBody*>;
+		hashTable[*iter]->push_back(o);
 	}
 
 	// Save the list of cells/indices in hash intersected by this Object
 	o->SetHashIndices(indices);
 }
 
-void World::UpdateHashedObject(Object* o)
+void World::UpdateHashedObject(RigidBody* o)
 {
 	int hIndex;
 
 	// list of hash indices after/before Object moved
-	std::vector<int> updatedIndices;
-	std::vector<int> oldIndices = o->GetHashIndices();
+	std::set<int> updatedIndices;
+	std::set<int> oldIndices = o->GetHashIndices();
 
 	// Iterators to track 'end' of currentIndices list
 /*	auto oldEnd = oldIndices.end();
@@ -307,16 +317,16 @@ void World::UpdateHashedObject(Object* o)
 //	o->SetHashIndices(updatedIndices);
 }
 
-std::vector<Object*>* World::QueryHash(Vector v)
+std::vector<RigidBody*>* World::QueryHash(Vector v)
 {
 	return hashTable[Hash(v)];
 }
 
-void World::RemoveFromHash(Object* o)
+void World::RemoveFromHash(RigidBody* o)
 {
-	std::vector<int> indices = o->GetHashIndices();
-	std::vector<Object*>* bucket;
-	std::vector<Object*>::iterator i;
+	std::set<int> indices = o->GetHashIndices();
+	std::vector<RigidBody*>* bucket;
+	std::vector<RigidBody*>::iterator i;
 	for(auto iter = indices.begin(); iter != indices.end(); ++iter)
 	{
 		bucket = hashTable[*iter];
@@ -327,7 +337,7 @@ void World::RemoveFromHash(Object* o)
 
 bool World::RayCast(Vector start, Vector dir, int mask, gFloat len/*=G_MAX*/)
 {
-	std::vector<Object*>* bucket;
+	std::vector<RigidBody*>* bucket;
 	Vector end = start + dir*len;
 	Vector diff = end - start;
 
@@ -342,7 +352,7 @@ bool World::RayCast(Vector start, Vector dir, int mask, gFloat len/*=G_MAX*/)
 		prevHash = curHash;
 
 		// Don't check Bucket if there is nothing in it
-		if(!hashIndices.count(curHash)) continue;
+	//	if(!hashIndices.count(curHash)) continue;
 
 		// Loop through each object in Bucket
 		bucket = hashTable[curHash];

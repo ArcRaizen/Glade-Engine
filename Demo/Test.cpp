@@ -21,10 +21,11 @@ Test::~Test()
 {
 }
 
-void Test::Update(float dt)
+bool Test::Update(float dt)
 {
 	pWorld->PhysicsUpdate(dt);
 	glutPostRedisplay();
+	return true;
 }
 
 void Test::Render()

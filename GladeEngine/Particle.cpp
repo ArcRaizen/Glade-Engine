@@ -3,12 +3,24 @@
 
 using namespace Glade;
 
-Particle::Particle() :Object(Vector(), Vector(), 1, false), damping(0.01), motion(30.0f), motionBias(Pow(0.5, PHYSICS_TIMESTEP))
+unsigned int Particle::PARTICLE_MESH_STACKS = 10;
+unsigned int Particle::PARTICLE_MESH_SLICES = 10;
+D3DXVECTOR4 Particle::PARTICLE_MESH_COLOR = D3DXVECTOR4(0,0,1,1);
+
+Particle::Particle() : Object(Vector(), Vector(), 0.01, 1, false), motion(30.0f), motionBias(Pow(0.5, PHYSICS_TIMESTEP))
 {
 	radius = 1;
+	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(
+		GeometryGenerator::CreateSphere(radius, 10, 10, PARTICLE_MESH_COLOR), "../GladeEngine/box.png");
+	shaderResource->world = &transformationMatrix;
+
+	transformationMatrix(3,0) = position.x;
+	transformationMatrix(3,1) = position.y;
+	transformationMatrix(3,2) = position.z;
+	CalcBoundingBox();
 }
 
-Particle::Particle(Vector pos, Vector vel, Vector accel, gFloat damp, gFloat iMass, gFloat rad, bool ug, Vector grav) : Object(pos, accel, iMass, ug, grav), damping(damp), motion(30.0f), motionBias(Pow(0.5, PHYSICS_TIMESTEP))
+Particle::Particle(Vector pos, Vector vel, Vector accel, gFloat damp, gFloat rad, gFloat iMass, bool ug, Vector grav) : Object(pos, accel, iMass, damp, ug, grav), motion(30.0f), motionBias(Pow(0.5, PHYSICS_TIMESTEP))
 #ifndef VERLET
 																										, velocity(vel), velocityModified(false)
 #else
@@ -16,6 +28,14 @@ Particle::Particle(Vector pos, Vector vel, Vector accel, gFloat damp, gFloat iMa
 #endif
 {
 	radius = rad;
+	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(
+		GeometryGenerator::CreateSphere(radius, 10, 10, PARTICLE_MESH_COLOR), "../GladeEngine/box.png");
+	shaderResource->world = &transformationMatrix;
+
+	transformationMatrix(3,0) = position.x;
+	transformationMatrix(3,1) = position.y;
+	transformationMatrix(3,2) = position.z;
+	CalcBoundingBox();
 }
 
 
@@ -46,13 +66,18 @@ bool Particle::Update()
 	velocity = position - prevPosition;
 
 	// Impose drag
-	velocity *= Pow(1-damping, PHYSICS_TIMESTEP);
+	velocity *= Pow(1-linearDamping, PHYSICS_TIMESTEP);
 
 	acceleration = force * inverseMass;
 	Vector nextPos = position + velocity + (acceleration * HALF_PHYSICS_TIMESTEP_SQR);
 	prevPosition = position;
 	position = nextPos;
 #endif
+
+	// Update transformation matrix
+	transformationMatrix(3,0) = position.x;
+	transformationMatrix(3,1) = position.y;
+	transformationMatrix(3,2) = position.z;
 
 	// Clear forces for next frame
 	force.Zero();
@@ -74,17 +99,19 @@ bool Particle::Update()
 	return true;
 }
 
+void Particle::Render() { GraphicsLocator::GetGraphics()->Render(shaderResource, 0); }
+
 void Particle::CalcBoundingBox()
 {
 	// Particle hasn't moved since last calculation, no need to do it again
 	if(!recalcAABB) return;
 
-	boundingBox.min.x = position.x - radius;
-	boundingBox.min.y = position.y - radius;
-	boundingBox.min.z = position.z - radius;
-	boundingBox.max.x = position.x + radius;
-	boundingBox.max.y = position.y + radius;
-	boundingBox.max.z = position.z + radius;
+	boundingBox.minimum.x = position.x - radius;
+	boundingBox.minimum.y = position.y - radius;
+	boundingBox.minimum.z = position.z - radius;
+	boundingBox.maximum.x = position.x + radius;
+	boundingBox.maximum.y = position.y + radius;
+	boundingBox.maximum.z = position.z + radius;
 	recalcAABB = false;
 }
 
@@ -106,42 +133,7 @@ void Particle::SetAwake(bool awake/*=true*/)
 	}
 }
 
-void Particle::RegisterForceGenerator(int id)
-{
-	for(unsigned int i = 0; i < generatorIDs.size(); ++i)
-	{
-		if(generatorIDs[i] == id) return;
-	}
-
-	generatorIDs.push_back(id);
-}
-
-void Particle::UnregisterForceGenerator(int id)
-{
-	for(unsigned int i = 0; i < generatorIDs.size(); ++i)
-	{
-		if(generatorIDs[i] == id)
-		{
-			generatorIDs.erase(generatorIDs.begin() + i);
-			return;
-		}
-	}
-}
-
-std::vector<int> Particle::GetRegisteredForceGenerators()
-{
-	return generatorIDs;
-}
-
-
-void Particle::AllowSetVelocity() {	properties |= OVERRIDE_VELOCITY; }
-void Particle::DisallowSetVelocity() { properties &= ~OVERRIDE_VELOCITY; }
-bool Particle::CheckAllowSetVelocity() { return properties & OVERRIDE_VELOCITY; }
-
-void Particle::GetVelocity(Vector& v) const { v = velocity; }
-void Particle::GetVelocity(Vector* v) const { *v = velocity; }
-
-Vector Particle::GetVelocity()
+Vector Particle::GetVelocity() const
 {
 #ifndef VERLET
 	velocityModified = false;
@@ -172,6 +164,9 @@ void Particle::SetVelocity(const gFloat x, const gFloat y, const gFloat z)
 	prevPosition.z = position.z - z;
 #endif
 }
+
+Matrix Particle::GetInverseInertiaTensorWorld() const { return inverseInertiaTensor; }
+void Particle::GetInverseInertiaTensorWorld(Matrix* m) const { *m = inverseInertiaTensor; }
 
 void Particle::ForceSetPosition(const Vector& p) { position = p; }
 void Particle::ForceSetVelocity(const Vector& v)

@@ -1,19 +1,16 @@
 #pragma once
-#ifndef APP_H
-#include "App.h"
-#endif
 
 #include "MouseManager.h"
 #include "KeyboardManager.h"
 #include "Orb.h"
 
-class ClothDemo : public App
+class ClothDemo : public Glade::GApplication
 {
 public:
 	ClothDemo();
 	~ClothDemo();
 
-	void Update(float dt);
+	bool Update(float dt);
 	void Render();
 
 private:

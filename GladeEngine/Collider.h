@@ -2,13 +2,17 @@
 #ifndef GLADE_COLLIDER_H
 #define GLADE_COLLIDER_H
 
+#include "PhysicMaterial.h"
 #ifndef GLADE_VECTOR_H
 #include "Math\Vector.h"
 #endif
-#ifndef GLADE_CORE_H
-#include "Core.h"
+#ifndef GLADE_MATRIX_H
+#include "Math\Matrix.h"
 #endif
+#include "Math\AABB.h"
 #include <vector>
+
+#define TRACK_MASS	1	// Should an Collider's/Object's mass be kept/tracked, or only its inverse mass?
 
 namespace Glade {
 /*
@@ -29,7 +33,11 @@ class Collider
 public:
 	enum class ColliderShape { SPHERE=0, BOX=1, CYLINDER=2, CONE=3, CAPSULE=4, PLANE=5, MESH=6 };
 
-	Collider(RigidBody* rb, ColliderShape cs, Matrix off, int mask) : attachedBody(rb), shape(cs), offset(off), collisionMask(mask), enabled(true) { }
+	Collider(RigidBody* rb, ColliderShape cs, PhysicMaterial* m, gFloat iMass, Matrix off, int mask) : attachedBody(rb), shape(cs), physicMaterial(m), inverseMass(iMass), offset(off), collisionMask(mask), enabled(true) 
+#ifdef TRACK_MASS
+																					, mass(iMass == 0 ? G_MAX : ((gFloat)1.0) / iMass)
+#endif
+	{ }
 
 	// Calculate complete transformation matrix for this Collider and pre-computer & save any derived geometric data
 	virtual void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform) { transform = attachedParentTransform * offset; position = Vector(transform(3,0), transform(3,1), transform(3,2)); }
@@ -37,11 +45,30 @@ public:
 	// Return ColliderShape of this Collider
 	ColliderShape GetShape() const { return shape; }
 
+	// Return Mass of this Collider
+	gFloat GetMass() const 
+	{
+#ifdef TRACK_MASS
+		return mass;
+#else
+		return (gFloat)1.0f / iMass;
+#endif
+	}
+
+	// Return Inverse Mass of this Collider
+	gFloat GetInverseMass() const { return inverseMass; }
+
 	// Return Offset Matrix of this Collider
 	Matrix GetOffset() const { return offset; }
 
 	// Return Transform Matrix of this Collider
 	Matrix GetTransform() const { return transform; }
+
+	// Return Inertia Tensor of this Collider
+	Matrix GetInertiaTensor() const { return inertiaTensor; }
+
+	// Return Position/Centroid of this Collider
+	Vector GetPosition() const { return position; }
 
 	// Check Collision Mask for specific collision group(s)
 	bool QueryCollisionMask(int m) const { return collisionMask & m; }
@@ -67,8 +94,14 @@ public:
 
 protected:
 	ColliderShape	shape;
+	PhysicMaterial*	physicMaterial;
+	gFloat			inverseMass;
+#ifdef TRACK_MASS
+	gFloat			mass;
+#endif
 	Matrix			offset;		// any potential Scaling, Rotational, or Translational offset from its attached RigidBody
 	Matrix			transform;
+	Matrix			inertiaTensor;
 	Vector			position;
 	int				collisionMask;
 
@@ -81,7 +114,10 @@ protected:
 class SphereCollider : public Collider
 {
 public:
-	SphereCollider(RigidBody* rb, gFloat rad, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::SPHERE, offset, mask), radius(rad) { }
+	SphereCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::SPHERE, m, iMass, offset, mask), radius(rad)
+	{
+		inertiaTensor = Matrix::SphereInertiaTensor((gFloat)1.0f / iMass, rad);
+	}
 	friend class CollisionTests;
 
 	void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform)
@@ -92,8 +128,8 @@ public:
 
 		// Calculate AABB
 		Vector radiusVec(radius, radius, radius);
-		bounds.max = position + radiusVec;
-		bounds.min = position - radiusVec;
+		bounds.maximum = position + radiusVec;
+		bounds.minimum = position - radiusVec;
 	}
 
 protected:
@@ -103,7 +139,13 @@ protected:
 class BoxCollider : public Collider
 {
 public:
-	BoxCollider(RigidBody* rb, Vector halfW, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::BOX, offset, mask), halfWidths(halfW) { }
+	BoxCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, Vector halfW, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::BOX, m, iMass, offset, mask), halfWidths(halfW)
+	{
+		if(iMass == gFloat(0.0f))
+			inertiaTensor = Matrix::INFINITE_MASS_INERTIA_TENSOR;
+		else
+			inertiaTensor = Matrix::CuboidInertiaTensor((gFloat)1.0f / iMass, halfW*(gFloat)2.0f);
+	}
 	friend class CollisionTests;
 
 	void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform)
@@ -131,15 +173,15 @@ public:
 		};
 
 		// Calc AABB from OOBB vertices
-		bounds.max = vertices[0]; bounds.min = vertices[7];
+		bounds.maximum = vertices[0]; bounds.minimum = vertices[7];
 		for(unsigned int i = 0; i < 8; ++i)
 		{
-			if(vertices[i].x > bounds.max.x) bounds.max.x = vertices[i].x;
-			else if(vertices[i].x < bounds.min.x) bounds.min.x = vertices[i].x;
-			if(vertices[i].y > bounds.max.y) bounds.max.y = vertices[i].y;
-			else if(vertices[i].y < bounds.min.y) bounds.min.y = vertices[i].y;
-			if(vertices[i].z > bounds.max.z) bounds.max.z = vertices[i].z;
-			else if(vertices[i].z < bounds.min.z) bounds.min.z = vertices[i].z;
+			if(vertices[i].x > bounds.maximum.x) bounds.maximum.x = vertices[i].x;
+			else if(vertices[i].x < bounds.minimum.x) bounds.minimum.x = vertices[i].x;
+			if(vertices[i].y > bounds.maximum.y) bounds.maximum.y = vertices[i].y;
+			else if(vertices[i].y < bounds.minimum.y) bounds.minimum.y = vertices[i].y;
+			if(vertices[i].z > bounds.maximum.z) bounds.maximum.z = vertices[i].z;
+			else if(vertices[i].z < bounds.minimum.z) bounds.minimum.z = vertices[i].z;
 		}
 	}
 protected:
@@ -163,7 +205,10 @@ protected:
 class CylinderCollider : public Collider
 {
 public:
-	CylinderCollider(RigidBody* rb, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CYLINDER, offset, mask), radius(rad), height(h) { }
+	CylinderCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CYLINDER, m, iMass, offset, mask), radius(rad), height(h)
+	{
+		inertiaTensor = Matrix::CylinderInertiaTensor((gFloat)1.0f / iMass, h, rad);
+	}
 	friend class CollisionTests;
 
 	void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform)
@@ -171,13 +216,13 @@ public:
 		Collider::CalcTransformAndDerivedGeometricData(attachedParentTransform);
 
 		// Calc center of top and bottom of Cylinder Collider, and the rotational axis that runs between them
-		p = position + transform.Multiply3(Vector(0.0f, -height/2.0f, 0.0f));
-		q = position + transform.Multiply3(Vector(0.0f, height/2.0f, 0.0f));
+		p = position + transform.Times3(Vector(0.0f, -height/2.0f, 0.0f));
+		q = position + transform.Times3(Vector(0.0f, height/2.0f, 0.0f));
 		axis = (q-p).Normalized();
 
 		// Calculate AABB: http://www.gamedev.net/topic/338522-bounding-box-for-a-cylinder/
-		bounds.min = Vector::VectorMin(p, q);
-		bounds.max = Vector::VectorMax(p, q);
+		bounds.minimum = Vector::VectorMin(p, q);
+		bounds.maximum = Vector::VectorMax(p, q);
 
 		// Image I drew to prove/check the math: http://i.imgur.com/tkGx4eM.png
 		gFloat diffX = p.x-q.x, diffY = p.y-q.y, diffZ = p.z-q.z;
@@ -187,8 +232,9 @@ public:
 		gFloat kz = Sqrt(diffX + diffY) / height; //Sqrt((diffX + diffY) / (diffX + diffY + diffZ));
 
 		Vector v(kx * radius, ky * radius, kz * radius);
-		bounds.min -= v;
-		bounds.max += v;
+		bounds.minimum -= v;
+		bounds.maximum += v;
+		bounds.CalcCenter();
 
 	}
 protected:
@@ -212,7 +258,10 @@ protected:
 class ConeCollider : public Collider
 {
 public:
-	ConeCollider(RigidBody* rb, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CONE, offset, mask), radius(rad), height(h), theta(ATan(radius/height)) { }
+	ConeCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CONE, m, iMass, offset, mask), radius(rad), height(h), theta(ATan(radius/height))
+	{
+		inertiaTensor = Matrix::ConeInertiaTensor((gFloat)1.0f / iMass, h, rad);
+	}
 	friend class CollisionTests;
 
 	void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform)
@@ -220,13 +269,13 @@ public:
 		Collider::CalcTransformAndDerivedGeometricData(attachedParentTransform);
 
 		// Calc Tip of cone and it's rotational axis (from tip to center of base)
-		tip = position + transform.Multiply3(Vector(0.0f, height/2.0f, 0.0f));
+		tip = position + transform.Times3(Vector(0.0f, height/2.0f, 0.0f));
 		axis = (position - tip).Normalized();
 
 		// Calculate AABB (same AABB as a Cylinder)
 		Vector base = tip + (axis * height);
-		bounds.min = Vector::VectorMin(base, tip);
-		bounds.max = Vector::VectorMax(tip, base);
+		bounds.minimum = Vector::VectorMin(base, tip);
+		bounds.maximum = Vector::VectorMax(tip, base);
 
 		gFloat diffX = tip.x-base.x, diffY = tip.y-base.y, diffZ = tip.z-base.z;
 		diffX *= diffX; diffY *= diffY; diffZ *= diffZ;
@@ -235,8 +284,9 @@ public:
 		gFloat kz = Sqrt(diffX + diffY) / height;	// Sqrt((diffX + diffY) / (diffX + diffY + diffZ));
 
 		Vector v(kx * radius, ky * radius, kz * radius);
-		bounds.min -= v;
-		bounds.max += v;
+		bounds.minimum -= v;
+		bounds.maximum += v;
+		bounds.CalcCenter();
 	}
 protected:
 	gFloat radius;
@@ -252,7 +302,10 @@ protected:
 class CapsuleCollider : public Collider
 {
 public:
-	CapsuleCollider(RigidBody* rb, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CAPSULE, offset, mask), radius(rad), height(h) { }
+	CapsuleCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CAPSULE, m, iMass, offset, mask), radius(rad), height(h)
+	{
+		inertiaTensor = Matrix::CapsuleInertiaTensor((gFloat)1.0f / iMass, h, rad);
+	}
 	friend class CollisionTests;
 
 	void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform)
@@ -260,26 +313,24 @@ public:
 		Collider::CalcTransformAndDerivedGeometricData(attachedParentTransform);
 
 		// Calc 'p' and 'q' - center of top and bottom of inner cylinder and center of Sphere caps
-		p = position + transform.Multiply3(Vector(0.0f, -height/2.0f, 0.0f));
-		q = position + transform.Multiply3(Vector(0.0f, height/2.0f, 0.0f));
+		p = position + transform.Times3(Vector(0.0f, -height/2.0f, 0.0f));
+		q = position + transform.Times3(Vector(0.0f, height/2.0f, 0.0f));
 		axis = (q-p).Normalized();
 
 		// Calc AABB (actually the the AABB of both Sphere caps)
-		AABB b1, b2;
 		Vector radiusVec(radius, radius, radius);
-		b1.max = p + radiusVec;
-		b1.min = p - radiusVec;
-		b2.max = q + radiusVec;
-		b2.min = q - radiusVec;
+		AABB b1(p - radiusVec, p + radiusVec),
+			b2(q - radiusVec, q + radiusVec);
 
 		// Combine into one AABB
 		bounds = b1;
-		if(b2.max.x > bounds.max.x) bounds.max.x = b2.max.x;
-		else /*if(b2.min.x < bounds.min.x)*/ bounds.min.x = b2.min.x;
-		if(b2.max.y > bounds.max.y) bounds.max.y = b2.max.y;
-		else /*if(b2.min.y < bounds.min.y)*/ bounds.min.y = b2.min.y;
-		if(b2.max.z > bounds.max.z) bounds.max.z = b2.max.z;
-		else /*if(b2.min.z < bounds.min.z)*/ bounds.min.z = b2.min.z;
+		if(b2.maximum.x > bounds.maximum.x) bounds.maximum.x = b2.maximum.x;
+		else /*if(b2.min.x < bounds.min.x)*/ bounds.minimum.x = b2.minimum.x;
+		if(b2.maximum.y > bounds.maximum.y) bounds.maximum.y = b2.maximum.y;
+		else /*if(b2.min.y < bounds.min.y)*/ bounds.minimum.y = b2.minimum.y;
+		if(b2.maximum.z > bounds.maximum.z) bounds.maximum.z = b2.maximum.z;
+		else /*if(b2.min.z < bounds.min.z)*/ bounds.minimum.z = b2.minimum.z;
+		bounds.CalcCenter();
 	}
 protected:
 	gFloat radius;		// radius of 2 half-sphere's on ends of capsule
@@ -296,7 +347,7 @@ class PlaneCollider : public Collider
 public:
 	// Width and Height - assume the plane is the floor with its normal pointing straight up the Y-axis. Width goes down the X-axis and height the Z-axis
 		// If the plane is a wall with the normal pointing straight at you, Width goes sideways, height goes up/down
-	PlaneCollider(RigidBody* rb, Vector n, gFloat _d, gFloat w, gFloat h, int mask=1) : Collider(rb, ColliderShape::PLANE, Matrix(), mask), normal(n), d(_d), width(w), height(h) { }
+	PlaneCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, Vector n, gFloat _d, gFloat w, gFloat h, int mask=1) : Collider(rb, ColliderShape::PLANE, m, iMass, Matrix(), mask), normal(n), d(_d), width(w), height(h) { }
 	friend class CollisionTests;
 
 	// Plane collider unique. It never updates after initial creation, because anything that has a Plane collider shound not move...ever!
@@ -314,7 +365,7 @@ protected:
 class MeshCollider: public Collider
 {
 public:
-	MeshCollider(RigidBody* rb, int mask=1) : Collider(rb, ColliderShape::MESH, Matrix(), mask) { }
+	MeshCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, int mask=1) : Collider(rb, ColliderShape::MESH, m, iMass, Matrix(), mask) { }
 	friend class CollisionTests;
 };
 

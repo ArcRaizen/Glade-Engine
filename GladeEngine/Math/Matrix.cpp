@@ -28,13 +28,13 @@ Matrix::Matrix(gFloat mat[][4]) : _00(mat[0][0]), _01(mat[0][1]), _02(mat[0][2])
 Matrix::Matrix(const Quaternion& q) : _03(0.0), _13(0.0), _23(0.0), _30(0.0), _31(0.0), _32(0.0), _33(1.0)
 {
 #ifdef LEFT_HANDED_COORDS
-	_00 = 1 - 2*q.y*q.y - 2*q.z*q.z;		_01 = 2*q.x*q.y - 2*q.z*q.w;			_02 = 2*q.x*q.z + 2*q.y*q.w;
-	_10 = 2*q.x*q.y + 2*q.z*q.w;			_11 = 1 - 2*q.x*q.x - 2*q.z*q.z;		_12 = 2*q.y*q.z - 2*q.x*q.w;
-	_20 = 2*q.x*q.z - 2*q.y*q.w;			_21 = 2*q.y*q.z + 2*q.x*q.w;			_22 = 1 - 2*q.x*q.x - 2*q.y*q.y;
-#else
 	_00 = 1 - 2*q.y*q.y - 2*q.z*q.z;		_01 = 2*q.x*q.y + 2*q.z*q.w;			_02 = 2*q.x*q.z - 2*q.y*q.w;
 	_10 = 2*q.x*q.y - 2*q.z*q.w;			_11 = 1 - 2*q.x*q.x - 2*q.z*q.z;		_12 = 2*q.y*q.z + 2*q.x*q.w;
 	_20 = 2*q.x*q.z + 2*q.y*q.w;			_21 = 2*q.y*q.z - 2*q.x*q.w;			_22 = 1 - 2*q.x*q.x - 2*q.y*q.y;
+#else
+	_00 = 1 - 2*q.y*q.y - 2*q.z*q.z;		_01 = 2*q.x*q.y - 2*q.z*q.w;			_02 = 2*q.x*q.z + 2*q.y*q.w;
+	_10 = 2*q.x*q.y + 2*q.z*q.w;			_11 = 1 - 2*q.x*q.x - 2*q.z*q.z;		_12 = 2*q.y*q.z - 2*q.x*q.w;
+	_20 = 2*q.x*q.z - 2*q.y*q.w;			_21 = 2*q.y*q.z + 2*q.x*q.w;			_22 = 1 - 2*q.x*q.x - 2*q.y*q.y;
 #endif
 }
 
@@ -71,13 +71,13 @@ Matrix::Matrix(gFloat phi, gFloat theta, gFloat psi) : _03(0.0), _13(0.0), _23(0
 	gFloat cosS_ = Cos(psi),	sinS_ = Sin(psi);
 
 #ifdef LEFT_HANDED_COORDS
-	_00 = cosT_*cosS_;		_01 = sinP_*sinT_*cosS_-cosP_*sinS_;		_02 = cosP_*sinT_*cosS_+sinP_*sinS_;
-	_10 = cosT_*sinS_;		_11 = sinP_*sinT_*sinS_+cosP_*cosS_;		_12 = cosP_*sinT_*sinS_-sinP_*cosS_;
-	_20 = -sinT_;			_21 = sinP_*cosT_;							_22 = cosP_*cosT_;
-#else
 	_00 = cosT_*cosS_;		_01 = sinP_*sinT_*cosS_+cosP_*sinS_;		_02 = sinP_*sinS_-cosP_*sinT_*cosS_;
 	_10 = -cosT_*sinS_;		_11 = cosP_*cosS_-sinP_*sinT_*sinS_;		_12 = cosP_*sinT_*sinS_+sinP_*cosS_;
 	_20 = sinT_;			_21 = -sinP_*cosT_;							_22 = cosP_*cosT_;
+#else
+	_00 = cosT_*cosS_;		_01 = sinP_*sinT_*cosS_-cosP_*sinS_;		_02 = cosP_*sinT_*cosS_+sinP_*sinS_;
+	_10 = cosT_*sinS_;		_11 = sinP_*sinT_*sinS_+cosP_*cosS_;		_12 = cosP_*sinT_*sinS_-sinP_*cosS_;
+	_20 = -sinT_;			_21 = sinP_*cosT_;							_22 = cosP_*cosT_;
 #endif
 }
 
@@ -100,9 +100,9 @@ Matrix::Matrix(Vector* trans, Quaternion* q, Vector* scale) : _01(0.0), _02(0.0)
 		_10 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x + q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleY;
 		_20 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x + q->y*q->y))) * scaleZ;
 #else
-		_00 = (1.0f - (2.0f * (q->y*q->y - q->z*q->z))) * scaleX;	_01 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleX;			_02 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleX;
-		_10 = (2.0f * (q->x*q->y + q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x - q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleY;
-		_20 = (2.0f * (q->x*q->z - q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x - q->y*q->y))) * scaleZ;
+		_00 = (1.0f - (2.0f * (q->y*q->y + q->z*q->z))) * scaleX;	_01 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleX;			_02 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleX;
+		_10 = (2.0f * (q->x*q->y + q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x + q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleY;
+		_20 = (2.0f * (q->x*q->z - q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x + q->y*q->y))) * scaleZ;
 #endif
 	}
 	else if(scale != nullptr)
@@ -136,25 +136,12 @@ Matrix& Matrix::operator= (const Matrix& mat)
 }
 
 #pragma region Operator Overloads
-// Indexing
-gFloat (&Matrix::operator[] (unsigned int index))[4]
-{
-	assert(index < 4);
-	return m[index];
-}
-
-const gFloat* Matrix::operator[] (unsigned int index) const
-{
-	assert(index < 4);
-	return m[index];
-}
-
-gFloat& Matrix::operator() (unsigned int i, unsigned int j)
+float& Matrix::operator() (unsigned int i, unsigned int j)
 {
 	assert(i < 4 && j < 4);
 	return m[i][j];
 }
-gFloat Matrix::operator() (unsigned int i, unsigned int j) const
+float Matrix::operator() (unsigned int i, unsigned int j) const
 {
 	assert(i < 4 && j < 4);
 	return m[i][j];
@@ -226,7 +213,7 @@ Matrix Matrix::operator* (const Matrix& mat) const
 		_00*mat._01 + _01*mat._11 + _02*mat._21 + _03*mat._31,
 		_00*mat._02 + _01*mat._12 + _02*mat._22 + _03*mat._32,
 		_00*mat._03 + _01*mat._13 + _02*mat._23 + _03*mat._33,
-		_10*mat._00 + _11*mat._10 + _13*mat._20 + _13*mat._30,
+		_10*mat._00 + _11*mat._10 + _12*mat._20 + _13*mat._30,
 		_10*mat._01 + _11*mat._11 + _12*mat._21 + _13*mat._31,
 		_10*mat._02 + _11*mat._12 + _12*mat._22 + _13*mat._32,
 		_10*mat._03 + _11*mat._13 + _12*mat._23 + _13*mat._33,
@@ -237,7 +224,7 @@ Matrix Matrix::operator* (const Matrix& mat) const
 		_30*mat._00 + _31*mat._10 + _32*mat._20 + _33*mat._30,
 		_30*mat._01 + _31*mat._11 + _32*mat._21 + _33*mat._31,
 		_30*mat._02 + _31*mat._12 + _32*mat._22 + _33*mat._32,
-		_30*mat._03 + _33*mat._13 + _32*mat._23 + _33*mat._33,
+		_30*mat._03 + _31*mat._13 + _32*mat._23 + _33*mat._33,
 	};
 	return Matrix(temp);
 }
@@ -259,7 +246,7 @@ Matrix&	Matrix::operator*= (const Matrix& mat)
 		_30*mat._00 + _31*mat._10 + _32*mat._20 + _33*mat._30,
 		_30*mat._01 + _31*mat._11 + _32*mat._21 + _33*mat._31,
 		_30*mat._02 + _31*mat._12 + _32*mat._22 + _33*mat._32,
-		_30*mat._03 + _33*mat._13 + _32*mat._23 + _33*mat._33
+		_30*mat._03 + _31*mat._13 + _32*mat._23 + _33*mat._33
 	};
 
 	_00 = temp[0];	_01 = temp[1];	_02 = temp[2];	_03 = temp[3];
@@ -296,16 +283,9 @@ bool Matrix::operator!= (const Matrix& mat) const
 			_20 != mat._20 || _21 != mat._21 || _22 != mat._22 || _23 != mat._23 ||
 			_30 != mat._30 || _31 != mat._31 || _32 != mat._32 || _33 != mat._33;
 }
-
 #pragma endregion
 
 #pragma region Functions
-// Return matrix as an array of 16 floats
-gFloat (&Matrix::GetArray())[16]
-{
-	return mArray;
-}
-
 // Set to and return Identity Matrix
 Matrix& Matrix::Identity()
 {
@@ -320,6 +300,21 @@ bool Matrix::IsIdentity()
 			_10 == 0 && _11 == 1 && _12 == 0 && _13 == 0 &&
 			_20 == 0 && _21 == 0 && _22 == 1 && _23 == 0 &&
 			_30 == 0 && _31 == 0 && _32 == 0 && _33 == 1;
+}
+
+Matrix& Matrix::Zero()
+{
+	_00 = _01 = _02 = _03 = _10 = _11 = _12 = _13 = 
+	_20 = _21 = _22 = _23 = _30 = _31 = _32 = _33 = 0;
+	return *this;
+}
+
+bool Matrix::IsZero()
+{
+	return  _00 == 0 && _01 == 0 && _02 == 0 && _03 == 0 &&
+			_10 == 0 && _11 == 0 && _12 == 0 && _13 == 0 &&
+			_20 == 0 && _21 == 0 && _22 == 0 && _23 == 0 &&
+			_30 == 0 && _31 == 0 && _32 == 0 && _33 == 0;
 }
 
 // Calculate and return the determinent of this Matrix
@@ -515,53 +510,6 @@ void Matrix::EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi, bool solution2
 	// Limit at theta = +/- 90 (cos(theta)=0 and sin(theta)=1). Stop that here.
 	if(_20 != 1 && _20 != -1)
 	{
-		// -asin(-sin(theta)) = -(-theta) = theta
-		theta = -ASin(_20);
-		if(solution2)
-			theta = PI - theta;
-		gFloat cosTheta = Cos(theta);
-
-		// atan2f(cos(theta)sin(psi), cos(theta)cos(psi)) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
-		// divide by cos(theta) to handle whether cos(theta) is positive or negative
-		psi = ATan2(_10/cosTheta, _00/cosTheta);
-
-		// atan2f(sin(phi)cos(theta), cos(phi)cos(theta)) = atan2f( sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-		// divide by cos(theta) to handle whether cos(theta) is positive or negative
-		phi = ATan2(_21/cosTheta, _22/cosTheta);
-	}
-	else
-	{
-		// Degree of freedom has been lost due to Gimbal Lock -> Can be anything
-		// Use 0 for simplicity
-		psi = 0;
-
-		if(_20 == 1)
-		{
-			// sin(PI/2) = 1 -> theta = PI/2
-			theta = PI / (gFloat)2.0;
-
-			// sin(phi)sin(PI/2)cos(psi)-cos(phi)sin(psi) -> sin(phi)cos(psi)-cos(phi)sin(psi)
-			// cos(phi)sin(PI/2)cos(psi)+sin(phi)sin(psi) -> cos(phi)cos(psi)+sin(phi)sin(psi)
-			// atan2f(sin(phi)cos(psi)-cos(phi)sin(psi), cos(phi)cos(psi)+sin(phi)sin(psi)) = atan2f(sin(phi-psi), cos(phi-psi))
-			// psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			phi = ATan2(_01, _02);
-		}
-		else
-		{
-			// sin(-PI/2) = -1 -> theta = -PI/2
-			theta = -(PI / (gFloat)2.0);
-
-			// sin(phi)sin(-PI/2)cos(psi)-cos(phi)sin(psi) -> -sin(phi)cos(psi)-cos(phi)sin(psi)
-			// cos(phi)sin(-PI/2)cos(psi)+sin(phi)sin(psi) -> -sin(phi)cos(psi)+sin(phi)sin(psi)
-			// atan2f(-(-sin(phi)cos(psi)-cos(phi)sin(psi)), -(-cos(phi)cos(psi)+sin(phi)sin(psi))) = atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), cos(phi)cos(psi)-sin(phi)sin(psi) ->
-			// atan2f(sin(phi+psi), cos(phi+psi)) -> psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-			phi = ATan2(-_01, -_02);
-		}
-	}
-#else
-	// Limit at theta = +/- 90 (cos(theta)=0 and sin(theta)=1). Stop that here.
-	if(_20 != 1 && _20 != -1)
-	{
 		// asin(sin(theta)) = theta
 		theta = ASin(_20);
 		if(solution2)
@@ -603,6 +551,53 @@ void Matrix::EulerAngles(gFloat& phi, gFloat& theta, gFloat& psi, bool solution2
 			// atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), -(sin(phi)sin(psi)-cos(phi)cos(psi))) -> atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), cos(phi)cos(psi)-sin(phi)sin(psi)) ->
 			// atan2f(sin(phi+psi), cos(phi+psi)) -> psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
 			phi = ATan2(_01, -_02);
+		}
+	}
+#else
+	// Limit at theta = +/- 90 (cos(theta)=0 and sin(theta)=1). Stop that here.
+	if(_20 != 1 && _20 != -1)
+	{
+		// -asin(-sin(theta)) = -(-theta) = theta
+		theta = -ASin(_20);
+		if(solution2)
+			theta = PI - theta;
+		gFloat cosTheta = Cos(theta);
+
+		// atan2f(cos(theta)sin(psi), cos(theta)cos(psi)) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
+		// divide by cos(theta) to handle whether cos(theta) is positive or negative
+		psi = ATan2(_10/cosTheta, _00/cosTheta);
+
+		// atan2f(sin(phi)cos(theta), cos(phi)cos(theta)) = atan2f( sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
+		// divide by cos(theta) to handle whether cos(theta) is positive or negative
+		phi = ATan2(_21/cosTheta, _22/cosTheta);
+	}
+	else
+	{
+		// Degree of freedom has been lost due to Gimbal Lock -> Can be anything
+		// Use 0 for simplicity
+		psi = 0;
+
+		if(_20 == 1)
+		{
+			// sin(PI/2) = 1 -> theta = PI/2
+			theta = PI / (gFloat)2.0;
+
+			// sin(phi)sin(PI/2)cos(psi)-cos(phi)sin(psi) -> sin(phi)cos(psi)-cos(phi)sin(psi)
+			// cos(phi)sin(PI/2)cos(psi)+sin(phi)sin(psi) -> cos(phi)cos(psi)+sin(phi)sin(psi)
+			// atan2f(sin(phi)cos(psi)-cos(phi)sin(psi), cos(phi)cos(psi)+sin(phi)sin(psi)) = atan2f(sin(phi-psi), cos(phi-psi))
+			// psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
+			phi = ATan2(_01, _02);
+		}
+		else
+		{
+			// sin(-PI/2) = -1 -> theta = -PI/2
+			theta = -(PI / (gFloat)2.0);
+
+			// sin(phi)sin(-PI/2)cos(psi)-cos(phi)sin(psi) -> -sin(phi)cos(psi)-cos(phi)sin(psi)
+			// cos(phi)sin(-PI/2)cos(psi)+sin(phi)sin(psi) -> -sin(phi)cos(psi)+sin(phi)sin(psi)
+			// atan2f(-(-sin(phi)cos(psi)-cos(phi)sin(psi)), -(-cos(phi)cos(psi)+sin(phi)sin(psi))) = atan2f(sin(phi)cos(psi)+cos(phi)sin(psi), cos(phi)cos(psi)-sin(phi)sin(psi) ->
+			// atan2f(sin(phi+psi), cos(phi+psi)) -> psi is set to 0 -> atan2f(sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
+			phi = ATan2(-_01, -_02);
 		}
 	}
 #endif
@@ -647,13 +642,13 @@ void Matrix::ComposeTransformationMatrix(Vector* trans, Quaternion* q, Vector* s
 		}
 
 #ifdef LEFT_HANDED_COORDS
-		_00 = (1.0f - (2.0f * (q->y*q->y + q->z*q->z))) * scaleX;	_01 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleX;			_02 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleX;
-		_10 = (2.0f * (q->x*q->y + q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x + q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleY;
-		_20 = (2.0f * (q->x*q->z - q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x + q->y*q->y))) * scaleZ;
-#else
 		_00 = (1.0f - (2.0f * (q->y*q->y + q->z*q->z))) * scaleX;	_01 = (2.0f * (q->x*q->y + q->z*q->w)) * scaleX;			_02 = (2.0f * (q->x*q->z - q->y*q->w)) * scaleX;
 		_10 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x + q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleY;
 		_20 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x + q->y*q->y))) * scaleZ;
+#else
+		_00 = (1.0f - (2.0f * (q->y*q->y + q->z*q->z))) * scaleX;	_01 = (2.0f * (q->x*q->y - q->z*q->w)) * scaleX;			_02 = (2.0f * (q->x*q->z + q->y*q->w)) * scaleX;
+		_10 = (2.0f * (q->x*q->y + q->z*q->w)) * scaleY;			_11 = (1.0f - (2.0f * (q->x*q->x + q->z*q->z))) * scaleY;	_12 = (2.0f * (q->y*q->z - q->x*q->w)) * scaleY;
+		_20 = (2.0f * (q->x*q->z - q->y*q->w)) * scaleZ;			_21 = (2.0f * (q->y*q->z + q->x*q->w)) * scaleZ;			_22 = (1.0f - (2.0f * (q->x*q->x + q->y*q->y))) * scaleZ;
 #endif
 	}
 	else if(scale != nullptr)
@@ -682,10 +677,17 @@ void Matrix::SetBasis(Vector x, Vector y, Vector z)
 }
 
 // Calculate and return Quaternion representation of this rotation Matrix
+// TODO
 Quaternion Matrix::ConvertToQuaternion() const
 {
 	gFloat tr = _00 + _11 + _22;
 	gFloat w, x, y, z;
+
+	gFloat qw, qx, qy, qz;
+	qw = Sqrt(1.0f + tr) / 2.0f;
+	qx = (_21 - _12) / (4.0f * qw);
+	qy = (_02 - _20) / (4.0f * qw);
+	qz = (_10 - _01) / (4.0f * qw);
 
 	if(tr > 0)
 	{
@@ -746,18 +748,6 @@ Quaternion Matrix::ConvertToQuaternion() const
 
 	return Quaternion(x, y, z, w);
 }
-Quaternion Matrix::ConvertToQuaternion2() const
-{
-	Quaternion q(MAX(0, 1+_00-_11-_22),
-				MAX(0, 1-_00+_11-_22),
-				MAX(0, 1-_00-_11+_22),
-				MAX(0, 1+_00+_11+_22));
-
-	q.x = copysign(q.x, _21-_12);
-	q.y = copysign(q.y, _02-_20);
-	q.z = copysign(q.z, _10-_01);
-	return q;
-}
 
 Matrix Matrix::GetMatrix3() const
 {
@@ -771,7 +761,7 @@ Matrix Matrix::GetMatrix3() const
 }
 
 // Return result of this * mat, but ignoring the 4th row/column
-Matrix Matrix::Multiply3(const Matrix& mat) const
+Matrix Matrix::Times3(const Matrix& mat) const
 {
 	gFloat temp[16] = {
 		_00*mat._00 + _01*mat._10 + _02*mat._20,
@@ -794,7 +784,7 @@ Matrix Matrix::Multiply3(const Matrix& mat) const
 	return Matrix(temp);
 }
 
-Vector Matrix::Multiply3(const Vector& v) const
+Vector Matrix::Times3(const Vector& v) const
 {
 	gFloat x,y,z;
 	x = _00*v.x + _10*v.y + _20*v.z;
@@ -803,8 +793,8 @@ Vector Matrix::Multiply3(const Vector& v) const
 	return Vector(x,y,z);
 }
 
-// Return result of this->Inverse3() * mat
-Matrix Matrix::MultiplyInverse3(const Matrix& mat) const
+// Return result of this->Transpose3() * mat, ignoring the 4th row/column
+Matrix Matrix::Transpose3Times(const Matrix& mat) const
 {
 	gFloat temp[16] = {
 		_00*mat._00 + _10*mat._10 + _20*mat._20,
@@ -827,13 +817,61 @@ Matrix Matrix::MultiplyInverse3(const Matrix& mat) const
 	return Matrix(temp);
 }
 
-Vector Matrix::MultiplyInverse3(const Vector& v) const
+Vector Matrix::Transpose3Times(const Vector& v) const
 {
 	gFloat x,y,z;
 	x = _00*v.x + _01*v.y + _02*v.z;
 	y = _10*v.x + _11*v.y + _12*v.z;
 	z = _20*v.x + _21*v.y + _22*v.z;
 	return Vector(x,y,z);
+}
+
+// Return result of this * mat->Transpose3(), ignoring 4th row/column
+Matrix Matrix::TimesTranspose3(const Matrix& mat) const
+{
+	gFloat temp[16] = {
+		_00*mat._00 + _01*mat._01 + _02*mat._02,
+		_00*mat._10 + _01*mat._11 + _02*mat._12,
+		_00*mat._20 + _01*mat._21 + _02*mat._22,
+		0.0f,		
+		_10*mat._00 + _11*mat._01 + _12*mat._02,
+		_10*mat._10 + _11*mat._11 + _12*mat._12,
+		_10*mat._20 + _11*mat._21 + _12*mat._22,
+		0.0f,
+		_20*mat._00 + _21*mat._01 + _22*mat._02,
+		_20*mat._10 + _21*mat._11 + _22*mat._12,
+		_20*mat._20 + _21*mat._21 + _22*mat._22,
+		0.0f,
+		0.0f,
+		0.0f,
+		0.0f,
+		1.0f
+	};
+	return Matrix(temp);
+}
+
+// Return result of this->Transpose3() * mat->Transpose3(), ignoring 4th row/column
+Matrix Matrix::Transpose3TimesTranspose3(const Matrix& mat) const
+{
+	gFloat temp[16] = {
+		_00*mat._00 + _10*mat._01 + _20*mat._02,
+		_00*mat._10 + _10*mat._11 + _20*mat._12,
+		_00*mat._20 + _10*mat._21 + _20*mat._22,
+		0.0f,		
+		_01*mat._00 + _11*mat._01 + _21*mat._02,
+		_01*mat._10 + _11*mat._11 + _21*mat._12,
+		_01*mat._20 + _11*mat._21 + _21*mat._22,
+		0.0f,
+		_02*mat._00 + _12*mat._01 + _22*mat._02,
+		_02*mat._10 + _12*mat._11 + _22*mat._12,
+		_02*mat._20 + _12*mat._21 + _22*mat._22,
+		0.0f,
+		0.0f,
+		0.0f,
+		0.0f,
+		1.0f
+	};
+	return Matrix(temp);
 }
 #pragma endregion
 
@@ -881,6 +919,8 @@ void Matrix::Rotate(gFloat angle, const Vector& axis)
 // Rotate this matrix by 'angle' radians along vector [xyz] from origin
 void Matrix::Rotate(gFloat angle, gFloat x, gFloat y, gFloat z)
 {
+	if(Abs(gFloat(1.0f)-Cos(angle)) < EPSILON) return;
+
 	// Create matrix for rotation
 	Matrix mR;
 
@@ -905,6 +945,26 @@ void Matrix::Rotate(gFloat angle, gFloat x, gFloat y, gFloat z)
 
 	// Multiply onto this matrix
 	*this = mR * *this;
+}
+
+// Rotate the orientation of this Matrix without altering is position
+void Matrix::Rotate(Matrix mat)
+{
+	gFloat temp[9] = {
+		_00*mat._00 + _01*mat._10 + _02*mat._20,
+		_00*mat._01 + _01*mat._11 + _02*mat._21,
+		_00*mat._02 + _01*mat._12 + _02*mat._22,	
+		_10*mat._00 + _11*mat._10 + _12*mat._20,
+		_10*mat._01 + _11*mat._11 + _12*mat._21,
+		_10*mat._02 + _11*mat._12 + _12*mat._22,
+		_20*mat._00 + _21*mat._10 + _22*mat._20,
+		_20*mat._01 + _21*mat._11 + _22*mat._21,
+		_20*mat._02 + _21*mat._12 + _22*mat._22
+	};
+
+	_00 = temp[0];	_01 = temp[1];	_02 = temp[2];
+	_10 = temp[3];	_11 = temp[4];	_12 = temp[5];
+	_20 = temp[6];	_21 = temp[7];	_22 = temp[8];
 }
 
 // Rotate by 'angle' radians along X-Axis
@@ -995,6 +1055,11 @@ void Matrix::ShearZX(gFloat shx, gFloat shz)
 }
 #pragma endregion
 
+Matrix Matrix::IdentityMatrix()
+{
+	return Matrix();
+}
+
 Matrix Matrix::SkewSymmetricMatrix(const Vector& v)
 {
 	gFloat m[16] = {
@@ -1002,6 +1067,17 @@ Matrix Matrix::SkewSymmetricMatrix(const Vector& v)
 		v.z, 0.0f, -v.x, 0.0f, 
 		-v.y, v.x, 0.0f, 0.0f, 
 		0.0f, 0.0f, 0.0f, 1.0f
+	};
+	return Matrix(m);
+}
+
+Matrix Matrix::MatrixFromTranslation(const Vector& trans)
+{
+	gFloat m[16] = {
+		1.0f,		0.0f,		0.0f,		0.0f,
+		0.0f,		1.0f,		0.0f,		0.0f,
+		0.0f,		0.0f,		1.0f,		0.0f,
+		trans.x,	trans.y,	trans.z,	1.0f,
 	};
 	return Matrix(m);
 }
@@ -1129,6 +1205,22 @@ Matrix Matrix::LookAt(const Vector& eye, const Vector& target, const Vector& up)
 	return Matrix(mat);
 }
 
+// Returns a View Matrix at position 'eye' with specified euler angles
+Matrix Matrix::FPSView(const Vector& eye, gFloat pitch, gFloat yaw, gFloat roll/*=gFloat(0.0f)*/)
+{
+	Matrix mat(pitch, yaw, roll);
+#ifdef LEFT_HANDED_COORDS
+	mat._30 = -Vector(mat._00, mat._10, mat._20).DotProduct(eye);
+	mat._31 = -Vector(mat._01, mat._11, mat._21).DotProduct(eye);
+	mat._32 = -Vector(mat._02, mat._12, mat._22).DotProduct(eye);
+#else
+	mat._30 = Vector(mat._00, mat._10, mat._20).DotProduct(eye);
+	mat._31 = Vector(mat._01, mat._11, mat._21).DotProduct(eye);
+	mat._32 = Vector(mat._02, mat._12, mat._22).DotProduct(eye);
+#endif
+	return mat;
+}
+
 // Returns a Perspective Projection Matrix
 Matrix Matrix::Perspective(gFloat fieldOfView, gFloat aspect, gFloat zNear, gFloat zFar)
 {
@@ -1173,7 +1265,7 @@ Matrix Matrix::Ortho(gFloat width, gFloat height, gFloat zNear, gFloat zFar)
 }
 
 #pragma region Inverse Inertia Tensors
-Matrix Matrix::CuboidInverseInertiaTensor(gFloat mass, Vector fullWidths)
+Matrix Matrix::CuboidInertiaTensor(gFloat mass, Vector fullWidths)
 {
 	gFloat x2 = fullWidths.x * fullWidths.x;
 	gFloat y2 = fullWidths.y * fullWidths.y;
@@ -1184,10 +1276,10 @@ Matrix Matrix::CuboidInverseInertiaTensor(gFloat mass, Vector fullWidths)
 		0.0f,					0.0f,					(mass*(x2+y2))/12.0f,	0.0f,
 		0.0f,					0.0f,					0.0f,					1.0f		
 	};
-	return Matrix(inertia).Inverse3();
+	return Matrix(inertia);
 }
 
-Matrix Matrix::SphereInverseInertiaTensor(gFloat mass, gFloat radius)
+Matrix Matrix::SphereInertiaTensor(gFloat mass, gFloat radius)
 {
 	gFloat s = mass * radius * radius * (2.0f / 5.0f);
 	gFloat inertia[16] = {
@@ -1196,10 +1288,10 @@ Matrix Matrix::SphereInverseInertiaTensor(gFloat mass, gFloat radius)
 		0.0f,	0.0f,	s,		0.0f,
 		0.0f,	0.0f,	0.0f,	1.0f
 	};
-	return Matrix(inertia).Inverse3();
+	return Matrix(inertia);
 }
 
-Matrix Matrix::HollowSphereInverseInertiaTensor(gFloat mass, gFloat radius)
+Matrix Matrix::HollowSphereInertiaTensor(gFloat mass, gFloat radius)
 {
 	gFloat s = mass * radius * radius * (2.0f / 3.0f);
 	gFloat inertia[16] = {
@@ -1208,10 +1300,10 @@ Matrix Matrix::HollowSphereInverseInertiaTensor(gFloat mass, gFloat radius)
 		0.0f,	0.0f,	s,		0.0f,
 		0.0f,	0.0f,	0.0f,	1.0f
 	};
-	return Matrix(inertia).Inverse3();
+	return Matrix(inertia);
 }
 
-Matrix Matrix::CylinderInverseInertiaTensor(gFloat mass, gFloat height, gFloat radius)
+Matrix Matrix::CylinderInertiaTensor(gFloat mass, gFloat height, gFloat radius)
 {
 	gFloat mh2 = mass * height * height;
 	gFloat mr2 = mass * radius * radius;
@@ -1221,10 +1313,10 @@ Matrix Matrix::CylinderInverseInertiaTensor(gFloat mass, gFloat height, gFloat r
 		0.0f,					0.0f,		mh2/12.0f + mr2/4.0f,	0.0f,
 		0.0f,					0.0f,		0.0f,					1.0f
 	};
-	return Matrix(inertia).Inverse3();
+	return Matrix(inertia);
 }
 
-Matrix Matrix::CylindricalTubeInverseInertiaTensor(gFloat mass, gFloat height, gFloat oRadius, gFloat iRadius)
+Matrix Matrix::CylindricalTubeInertiaTensor(gFloat mass, gFloat height, gFloat oRadius, gFloat iRadius)
 {
 	gFloat mh2 = mass * height * height;
 	gFloat mr2 = mass * (oRadius*oRadius + iRadius*iRadius);
@@ -1234,10 +1326,10 @@ Matrix Matrix::CylindricalTubeInverseInertiaTensor(gFloat mass, gFloat height, g
 		0.0f,					0.0f,		mh2/12.0f + mr2/4.0f,	0.0f,
 		0.0f,					0.0f,		0.0f,					1.0f
 	};
-	return Matrix(inertia).Inverse3();
+	return Matrix(inertia);
 }
 
-Matrix Matrix::ConeInverseInertiaTensor(gFloat mass, gFloat height, gFloat radius)
+Matrix Matrix::ConeInertiaTensor(gFloat mass, gFloat height, gFloat radius)
 {
 	gFloat mh2 = mass * height * height;
 	gFloat mr2 = mass * radius * radius;
@@ -1247,10 +1339,10 @@ Matrix Matrix::ConeInverseInertiaTensor(gFloat mass, gFloat height, gFloat radiu
 		0.0f,						0.0f,		mh2*0.6f + mr2*0.15f,	0.0f,
 		0.0f,						0.0f,		0.0f,					1.0f
 	};
-	return Matrix(inertia).Inverse3();
+	return Matrix(inertia);
 }
 
-Matrix Matrix::CapsuleInverseInertiaTensor(gFloat mass, gFloat height, gFloat radius)
+Matrix Matrix::CapsuleInertiaTensor(gFloat mass, gFloat height, gFloat radius)
 {
 	gFloat r2 = radius * radius;
 	gFloat h2 = height * height;
@@ -1272,6 +1364,6 @@ Matrix Matrix::CapsuleInverseInertiaTensor(gFloat mass, gFloat height, gFloat ra
 		0.0f,	0.0f,	xx,		0.0f,
 		0.0f,	0.0f,	0.0f,	1.0f
 	};
-	return Matrix(inertia).Inverse3();
+	return Matrix(inertia);
 }
 #pragma endregion

@@ -10,7 +10,7 @@ ParticleTearableCableContactGenerator::ParticleTearableCableContactGenerator(Par
 unsigned int ParticleTearableCableContactGenerator::GenerateContact(ParticleContact* contacts, unsigned int limit) const
 {
 //	gFloat currentLength = CalcCurrentLength();
-	gFloat currentLength = AppoximateSquareRoot(CalcCurrentSquaredLength(), maxLength, 3);
+	gFloat currentLength = ApproximateSquareRoot2(CalcCurrentSquaredLength(), maxLength, 3);
 
 	// Cable keeps 2 Particles within a maximum length, but does nothing if they are
 	// within that legnth. Return no contact.

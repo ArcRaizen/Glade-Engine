@@ -46,8 +46,8 @@ public:
 	Quaternion& operator*= (const Quaternion& other);
 	Quaternion operator* (gFloat scalar) const;
 	Quaternion& operator*= (gFloat scalar);
-	Quaternion& operator~();
-	Quaternion& operator-();
+	Quaternion operator~() const;
+	Quaternion operator-() const;
 	gFloat operator% (const Quaternion& other) const;
 	bool operator== (const Quaternion& other) const;
 	bool operator!= (const Quaternion& other) const;

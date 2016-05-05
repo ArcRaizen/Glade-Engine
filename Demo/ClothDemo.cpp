@@ -56,10 +56,11 @@ ClothDemo::~ClothDemo()
 {
 }
 
-void ClothDemo::Update(float dt)
+bool ClothDemo::Update(float dt)
 {
 	pWorld->PhysicsUpdate(dt);
 	glutPostRedisplay();
+	return true;
 }
 
 void ClothDemo::Render()

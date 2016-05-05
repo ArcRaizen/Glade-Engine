@@ -2,11 +2,11 @@
 #ifndef GLADE_WORLD_H
 #define GLADE_WORLD_H
 
-#include "Core.h"
+#include "GladeConfig.h"
 #include "RigidBody.h"
 //#include "Force Generators\ForceGenerator.h"
 //#include "Contact Generators\ContactGenerator.h"
-#include "ContactResolver.h"
+#include "Contacts\ContactResolver.h"
 #include "CollisionTests.h"
 #include <algorithm>
 #include <map>
@@ -58,25 +58,24 @@ protected:
 
 // ~~~~ SPATIAL HASH ~~~~
 	int						Hash(Vector v);
-	std::vector<int>		GetHashIndices(Object* o);
+	std::set<int>			GetHashIndices(RigidBody* o);
 	void					ClearHash();
-	void					AddToHash(Object* o);
-	void					UpdateHashedObject(Object* o);
-	std::vector<Object*>*	QueryHash(Vector v);
-	void					RemoveFromHash(Object* o);
+	void					AddToHash(RigidBody* o);
+	void					UpdateHashedObject(RigidBody* o);
+	std::vector<RigidBody*>*QueryHash(Vector v);
+	void					RemoveFromHash(RigidBody* o);
 	bool					RayCast(Vector start, Vector dir, int mask, gFloat len=G_MAX);
 
-	std::vector<Object*>**	hashTable;
-	std::set<int>			hashIndices;
-	int						numBuckets;
-	int						cellSize;
-	Vector					worldSize;		// There is an issue with Spatial Hashing in that the hashing algorithm will not work properly for negative positions.
-											// It will return negative indices for negative positions, which will error when attempting to place/locate objects in the hash.
-											// To resolve this, a "Maximum Size" of the world is to be given, and all positions will be offset by half that size when being hashed
-											// so that real positions from -worldSize/2 -> worldSize/2 will be valid.
-											// This way, objects can be located at (-100, 50, 0) instead of having to have everything shifted several hundred units positive.
-											// Multiple options for what actions to take when an Object exceeds this "Maximum Size" of the world will be provided and can be
-											// swapped between with pre-processor defined macros in "Core.h"
+	std::vector<RigidBody*>**	hashTable;
+	int							numBuckets;
+	int							cellSize;
+	Vector						worldSize;		// There is an issue with Spatial Hashing in that the hashing algorithm will not work properly for negative positions.
+												// It will return negative indices for negative positions, which will error when attempting to place/locate objects in the hash.
+												// To resolve this, a "Maximum Size" of the world is to be given, and all positions will be offset by half that size when being hashed
+												// so that real positions from -worldSize/2 -> worldSize/2 will be valid.
+												// This way, objects can be located at (-100, 50, 0) instead of having to have everything shifted several hundred units positive.
+												// Multiple options for what actions to take when an Object exceeds this "Maximum Size" of the world will be provided and can be
+												// swapped between with pre-processor defined macros in "Core.h"
 };
 }	// namespace
 #endif	// GLADE_WORLD_H

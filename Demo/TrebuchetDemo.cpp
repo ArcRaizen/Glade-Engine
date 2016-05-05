@@ -30,11 +30,12 @@ TrebuchetDemo::~TrebuchetDemo()
 {
 }
 
-void TrebuchetDemo::Update(float dt)
+bool TrebuchetDemo::Update(float dt)
 {
 	pWorld->PhysicsUpdate(0.032);
 
 	glutPostRedisplay();
+	return true;
 }
 
 void TrebuchetDemo::Draw()

@@ -1,15 +1,13 @@
 #pragma once
-#ifndef APP_H
-#include "App.h"
-#endif
+#include "Orb.h"
 
-class BuoyancyDemo : public App
+class BuoyancyDemo : public Glade::GApplication
 {
 public:
 	BuoyancyDemo();
 	~BuoyancyDemo();
 
-	void Update(float dt);
+	bool Update(float dt);
 	void Draw();
 
 private:

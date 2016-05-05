@@ -11,6 +11,7 @@
 #ifndef GLADE_PRECISION_H
 #include "Precision.h"
 #endif
+#include "MathMisc.h"
 
 namespace Glade {
 class Matrix;
@@ -73,6 +74,7 @@ public:
 	Vector& NormalizeInPlace();
 	gFloat	DotProduct(const Vector& other) const;
 	Vector	CrossProduct(const Vector& other) const;
+	Matrix	TensorProduct(const Vector& other) const;
 	gFloat	Magnitude() const;
 	gFloat  SquaredMagnitude() const;
 	void	Zero();
@@ -93,6 +95,10 @@ public:
 	static Vector ZeroVector();
 	static Vector VectorMin(const Vector& v1, const Vector& v2);
 	static Vector VectorMax(const Vector& v1, const Vector& v2);
+	static Vector Lerp(const Vector& start, const Vector& end, gFloat t);
+	static Vector Slerp(const Vector& start, const Vector& end, gFloat t);
+	static Vector Slerp2(const Vector& start, const Vector& end, gFloat t);
+	static Vector NLerp(const Vector& start, const Vector& end, gFloat t);
 
 	// Static Vectors
 	const static Vector GRAVITY;

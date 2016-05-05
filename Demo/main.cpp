@@ -4,7 +4,6 @@
 #include "ClothDemo.h"
 #include "Test.h"
 #include "RigidBodyDemo.h"
-#include "Arcball.h"
 #ifndef KEYBOARD_H
 #include "KeyboardManager.h"
 #endif
@@ -21,8 +20,27 @@
 #include <algorithm>
 using namespace std;
 
+#if 1
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdine, int iCmdshow)
+{
+	Glade::GApplication* app;
+	bool result;
+
+	app = new RigidBodyDemo();
+	if (!app) return 0;
+
+	result = app->Initialize();
+	if (result)
+		app->Run();
+
+	app->Shutdown();
+	delete app;
+	app = 0;
+	return 0;
+}
+#else
+Glade::GApplication* app;
 int window;
-App* app;
 char text[30];
 void Init()
 {
@@ -33,11 +51,11 @@ void Init()
 	glLoadIdentity();
 	glOrtho(-WINDOW_WIDTH/WINDOW_HEIGHT, WINDOW_WIDTH/WINDOW_HEIGHT, -1.0f, 1.0f, -1.0f, 1.0f);
 
-/*	Quaternion q1(0,0,0,1), q2(0,0,0,1);
-	Quaternion angVel(PI * (1.0f/60.0f) * 0.5f, PI * (1.0f/60.0f) * 0.5f * -1, 0, 0);
-	gFloat x,y,z,a,b,c;
-	while(true)
-	{
+	/*	Quaternion q1(0,0,0,1), q2(0,0,0,1);
+		Quaternion angVel(PI * (1.0f/60.0f) * 0.5f, PI * (1.0f/60.0f) * 0.5f * -1, 0, 0);
+		gFloat x,y,z,a,b,c;
+		while(true)
+		{
 		q1 = q1 + q1*angVel;
 		q1.EulerAngles(x,y,z);
 		x *= RAD2DEG; y *= RAD2DEG; z *= RAD2DEG;
@@ -48,10 +66,10 @@ void Init()
 
 		int blah = 5; 
 		blah++;
-	}
-	int x1 = 5;
-	x1++;
-*/
+		}
+		int x1 = 5;
+		x1++;
+		*/
 
 	Vector x(5,-3,2), y(0, 7, 1);
 	Matrix yMat = Matrix::SkewSymmetricMatrix(y);
@@ -59,7 +77,6 @@ void Init()
 	Vector z2 = x * yMat;
 
 	TimerManager::Init();
-	Arcball::Init(WINDOW_WIDTH, WINDOW_HEIGHT);
 	app = new RigidBodyDemo();
 	srand(time(NULL));
 }
@@ -70,10 +87,8 @@ void Resize(int w, int h)
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(-25.0, 25.0, -25.0, 25.0, -50.0, 100.0);
-//	glFrustum(-25.0, 25.0, -25.0, 25.0, 1.0, 100.0);
+	//	glFrustum(-25.0, 25.0, -25.0, 25.0, 1.0, 100.0);
 	glMatrixMode(GL_MODELVIEW);
-
-	Arcball::Resize(w, h);
 }
 
 void Update()
@@ -127,3 +142,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+#endif  

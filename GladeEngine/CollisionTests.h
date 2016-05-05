@@ -6,13 +6,13 @@
 #include "Collider.h"
 #endif
 #ifndef GLADE_CONTACT_H
-#include "Contact.h"
+#include "Contacts\Contact.h"
 #endif
 #ifndef GLADE_VECTOR_H
 #include "Math\Vector.h"
 #endif
-#ifndef GLADE_CORE_H
-#include "Core.h"
+#ifndef GLADE_CONFIG_H
+#include "GladeConfig.h"
 #endif
 #include <algorithm>
 
@@ -22,6 +22,7 @@ class CollisionTests
 public:
 	static int TestCollision(Collider* a, Collider* b, Contact* contacts);
 	static bool AABBTest(AABB a, AABB b);
+	static void SetAABBTestEpsilon(gFloat e);
 
 private:
 	// Array of pointers to each Collision Test function
@@ -32,6 +33,12 @@ private:
 	// Used to select index of correct function in Tests array
 	// for Collider's being tested
 	static const int helperIndices[7];
+
+	static gFloat AABBTestEpsilon;
+
+	inline static gFloat GetCoeffOfRestitution(Collider* _a, Collider* _b) { return _a->physicMaterial->GetCombinedBounciness(_b->physicMaterial); }
+	inline static gFloat GetStaticFriction(Collider* _a, Collider* _b) { return _a->physicMaterial->GetCombinedStaticFriction(_b->physicMaterial); }
+	inline static gFloat GetDynamicFriction(Collider* _a, Collider* _b) { return _a->physicMaterial->GetCombinedDynamicFriction(_b->physicMaterial); }
 
 	static int SphereSphereTest(Collider* _a, Collider* b, Contact* contacts);
 	static int SphereBoxTest(Collider* _a, Collider* b, Contact* contacts);

@@ -192,24 +192,16 @@ Quaternion& Quaternion::operator*= (gFloat scalar)
 }
 
 // Quaternion Conjugate
-Quaternion& Quaternion::operator~()
+Quaternion Quaternion::operator~() const
 {
-	x = -x;
-	y = -y;
-	z = -z;
-
-	return *this;
+	return Quaternion(-x, -y, -z, w);
 }
 
-// Quaternion Negation
-Quaternion& Quaternion::operator-()
+// Quaternion Inverse
+Quaternion Quaternion::operator-() const
 {
-	x = -x;
-	y = -y;
-	z = -z;
-	w = -w;
-
-	return *this;
+	Quaternion q(-x, -y, -z, w);
+	return q * (1/Pow(gFloat(q),2));
 }
 
 // Quaternion Dot Product
@@ -304,16 +296,14 @@ Quaternion& Quaternion::ConjugateInPlace()
 
 Quaternion Quaternion::Inverse() const
 {
-	Quaternion q(x, y, z, w);
-
-	return q.Conjugated() * (1/Pow(gFloat(q),2));
+	Quaternion q(-x, -y, -z, w);
+	return q * (1/Pow(gFloat(q),2));
 }
 
 Quaternion& Quaternion::InvertInPlace()
 {
 	(*this).ConjugateInPlace();
 	(*this) *= (1 / (gFloat(*this) * gFloat(*this)));
-
 	return (*this);
 }
 
@@ -396,14 +386,14 @@ Matrix Quaternion::ConvertToMatrix() const
 {
 	gFloat matrix[16] = {
 #ifdef LEFT_HANDED_COORDS
-		1 - 2*y*y - 2*z*z,	2*x*y - 2*z*w,		2*x*z + 2*y*w,		0.0f,
-		2*x*y + 2*z*w,		1 - 2*x*x - 2*z*z,	2*y*z - 2*x*w,		0.0f,
-		2*x*z - 2*y*w,		2*y*z + 2*x*w,		1 - 2*x*x - 2*y*y,	0.0f,
-		0.0f,				0.0f,				0.0f,				1.0f
-#else
 		1- 2*y*y - 2*z*z,	2*x*y + 2*z*w,		2*x*z - 2*y*w,		0.0f,
 		2*x*y - 2*z*w,		1 - 2*x*x - 2*z*z,	2*y*z + 2*x*w,		0.0f,
 		2*x*z + 2*y*w,		2*y*z - 2*x*w,		1 - 2*x*x - 2*y*y,	0.0f,
+		0.0f,				0.0f,				0.0f,				1.0f
+#else
+		1 - 2*y*y - 2*z*z,	2*x*y - 2*z*w,		2*x*z + 2*y*w,		0.0f,
+		2*x*y + 2*z*w,		1 - 2*x*x - 2*z*z,	2*y*z - 2*x*w,		0.0f,
+		2*x*z - 2*y*w,		2*y*z + 2*x*w,		1 - 2*x*x - 2*y*y,	0.0f,
 		0.0f,				0.0f,				0.0f,				1.0f
 #endif
 	};
@@ -536,29 +526,29 @@ gFloat* Quaternion::QuaternionEulerAngles(Quaternion& q)
 	gFloat* eulerAngles = new gFloat[3];
 
 	gFloat phi=0, theta=0, psi=0;
-	gFloat xyDist = Sqrt(matrix[0][0]*matrix[0][0] + matrix[1][0]*matrix[1][0]);
+	gFloat xyDist = Sqrt(matrix(0,0)*matrix(0,0) + matrix(1,0)*matrix(1,0));
 
 	// Limit at theta = +/- 90. Stop that here.
 	if(xyDist > 0.0001f)
 	{
 		// atan2f( sin(theta), abs(cos(theta))) = atan2f(tan(theta)) = theta
-		theta = ATan2(-matrix[2][0], xyDist);
+		theta = ATan2(-matrix(2,0), xyDist);
 
 		// atan2f( cos(theta)sin(psi), cos(theta)cos(psi)) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
-		psi = ATan2(matrix[1][0], matrix[0][0]);
+		psi = ATan2(matrix(1,0), matrix(0,0));
 
 		// atan2f( sin(phi)cos(theta), cos(phi)cos(theta)) = atan2f( sin(phi), cos(phi)) = atan2f(tan(phi)) = phi
-		phi = ATan2(matrix[2][1], matrix[2][2]);
+		phi = ATan2(matrix(2,1), matrix(2,0));
 	}
 	else
 	{
 		// atan2f( sin(theta), abs(cos(theta))) = atan2f( tan(theta)) = theta
-		theta = ATan2(-matrix[2][0], xyDist);
+		theta = ATan2(-matrix(2,0), xyDist);
 
 		// atan2f( -(cos(phi)sin(psi)+sin(phi)sin(theta)cos(psi)), cos(phi)cos(psi)+sin(phi)sin(theta)sin(psi))
 		//		in this clause, we assume thetha = 90deg or PI/4rad, at which sin(theta) = 0 - This results in
 		// atan2f( cos(phi)sin(psi)-0, cos(phi)cos(psi)+0)) = atan2f(cos(phi)sin(psi), cos(phi)cos(psi)) = atan2f(sin(psi), cos(psi)) = atan2f(tan(psi)) = psi
-		psi = ATan2(-matrix[0][1], matrix[1][1]);
+		psi = ATan2(-matrix(0,1), matrix(1,1));
 
 		// Degree of freedom has been lost due to Gimbal Lock
 		phi = 0;

@@ -14,6 +14,8 @@ const CollisionTests::FP CollisionTests::Tests[28] = {
 
 const int CollisionTests::helperIndices[7] = { 0, 6, 11, 15, 18, 20, 21 };
 
+gFloat CollisionTests::AABBTestEpsilon = gFloat(0.03f);
+
 int CollisionTests::TestCollision(Collider* a, Collider* b, Contact* contacts)
 {
 	// These Collider's cannot collide
@@ -25,9 +27,8 @@ int CollisionTests::TestCollision(Collider* a, Collider* b, Contact* contacts)
 	// Swap collider's for simplicity (a is always 1st parameter sent)
 	if(_a > _b)
 	{
-		Collider* temp = a;
-		a = b;
-		b = temp;
+		Swap(a, b);
+		SwapXOR(_a, _b);
 	}
 
 	// Call appropriate function
@@ -36,15 +37,19 @@ int CollisionTests::TestCollision(Collider* a, Collider* b, Contact* contacts)
 
 bool CollisionTests::AABBTest(AABB a, AABB b)
 {
-	if(a.max.x < b.min.x) return false;
-	if(a.min.x > b.max.x) return false;
-	if(a.max.y < b.min.y) return false;
-	if(a.min.y > b.max.y) return false;
-	if(a.max.z < b.min.z) return false;
-	if(a.min.z > b.max.z) return false;
+	if(a.maximum.x < b.minimum.x - AABBTestEpsilon) return false;
+	if(a.minimum.x > b.maximum.x + AABBTestEpsilon) return false;
+	if(a.maximum.y < b.minimum.y - AABBTestEpsilon) return false;
+	if(a.minimum.y > b.maximum.y + AABBTestEpsilon) return false;
+	if(a.maximum.z < b.minimum.z - AABBTestEpsilon) return false;
+	if(a.minimum.z > b.maximum.z + AABBTestEpsilon) return false;
 	return true;
 }
 
+void CollisionTests::SetAABBTestEpsilon(gFloat e) { AABBTestEpsilon = e; }
+
+// NORMAL IS RELATIVE TO _A
+// CONTACT POINT SHOULD BE ON SURFACE OF _A
 #pragma region Sphere Collisions
 int CollisionTests::SphereSphereTest(Collider* _a, Collider* _b, Contact* contacts)
 {
@@ -58,8 +63,9 @@ int CollisionTests::SphereSphereTest(Collider* _a, Collider* _b, Contact* contac
 	{
 		gFloat len = diff.Magnitude();
 		Vector normal = diff / len;
-		contacts->SetNewContact(s1->attachedBody, s2->attachedBody, 1.0f, 0.0f, normal,  
-								s1->position + normal*s1->radius, len - (s1->radius + s2->radius));
+		contacts->SetNewContact(s1->attachedBody, s2->attachedBody, GetCoeffOfRestitution(_a,_b), 
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), 
+								normal, s1->position + normal*s1->radius, len - (s1->radius + s2->radius));
 		return 1;
 	}
 
@@ -80,7 +86,8 @@ int CollisionTests::SphereBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 	{
 		gFloat len = diff.Magnitude();
 		Vector normal = diff / len;
-		contacts->SetNewContact(s->attachedBody, b->attachedBody, 1.0f, 0.0f, normal,
+		contacts->SetNewContact(s->attachedBody, b->attachedBody, GetCoeffOfRestitution(_a,_b), 
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), normal,
 								s->position + normal*s->radius, len - s->radius);
 		return 1;
 	}
@@ -339,7 +346,7 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 //	if(contacts == nullptr) return 1;
 
 	// Compute normal in global coordinates
-	if(code > 6)
+	if(normal.IsZero())
 	{
 		// Dot product with each column of b1's rotation matrix (where each row is its local axes)
 		Vector n = normal;
@@ -381,7 +388,9 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 		p2 += ub*t;	// Move p2 down to closest point
 
 		// Contact point is halfway between 2 closest points
-		contacts->SetNewContact(b1->attachedBody, b2->attachedBody, 1.0f, 0.0f, normal, (p1+p2)/2.0f, -separationDist);
+		contacts->SetNewContact(b1->attachedBody, b2->attachedBody, GetCoeffOfRestitution(_a,_b), 
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), 
+								normal, ((p1+p2)*gFloat(0.5f)), -separationDist);
 		return 1;
 	}
 
@@ -389,7 +398,7 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 	// 'a' is reference face (normal is perpendicular to 'a')
 	// 'b' is incident face (closest face on other box)
 
-	// New variables to use - set so reference face is 'a' and incidend face is 'b'
+	// New variables to use - set so reference face is 'a' and incident face is 'b'
 	Vector ua[3]={b1->u[0], b1->u[1], b1->u[2]}, ub[3]={b2->u[0], b2->u[1], b2->u[2]},	// axes of each box
 		pa=b1->position, pb=b2->position,		// positions of each box
 		sa=b1->halfWidths, sb=b2->halfWidths,	// halfwidths of each box ('s' for side)
@@ -397,10 +406,10 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 	if(code > 3)	// Swap them around
 	{
 		ua[0] = b2->u[0]; ua[1] = b2->u[1]; ua[2] = b2->u[2]; 
-		ub[0] = b1->u[0]; ua[1] = b1->u[1]; ua[2] = b1->u[2];
+		ub[0] = b1->u[0]; ub[1] = b1->u[1]; ub[2] = b1->u[2];
 		pa=b2->position; pb=b1->position; 
 		sa=b2->halfWidths; sb=b1->halfWidths;
-		normal2 = normal * -1.0f;
+		normal2 = normal * gFloat(-1.0f);
 	}
 
 	// 'normalR' is normal vector of reference face dotted with axes of the incident box
@@ -459,10 +468,20 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 	gFloat k1, k2, k3, k4;
 	c1 = center.DotProduct(ua[code1]);
 	c2 = center.DotProduct(ua[code2]);
-	m11 = R(code1, a1); //ua[code1].DotProduct(ub[a1]);
-	m12 = R(code1, a2); //ua[code1].DotProduct(ub[a2]);
-	m21 = R(code2, a1); //ua[code2].DotProduct(ub[a1]);
-	m22 = R(code2, a2); //ua[code2].DotProduct(ub[a2]);
+	if(code < 3)
+	{
+		m11 = R(code1, a1); //ua[code1].DotProduct(ub[a1]);
+		m12 = R(code1, a2); //ua[code1].DotProduct(ub[a2]);
+		m21 = R(code2, a1); //ua[code2].DotProduct(ub[a1]);
+		m22 = R(code2, a2); //ua[code2].DotProduct(ub[a2]);
+	}
+	else
+	{
+		m11 = R(a1, code1);
+		m12 = R(a2, code1);
+		m21 = R(a1, code2);
+		m22 = R(a2, code2);
+	}
 	k1 = m11 * sb[a1];
 	k2 = m21 * sb[a1];
 	k3 = m12 * sb[a2];
@@ -488,7 +507,7 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 	// and compute Contact position and depth for each point
 	gFloat point[24];	// Contact points
 	gFloat depth[8];	// corresponding depths
-	gFloat det1 = 1.0f/(m11*m22 - m12*m21);
+	gFloat det1 = gFloat(1.0f)/(m11*m22 - m12*m21);
 	m11 *= det1;
 	m12 *= det1;
 	m21 *= det1;
@@ -497,7 +516,7 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
   	for(unsigned int i = 0; i < n; ++i)
 	{
 		gFloat k5 = (m22 * (ret[i*2] - c1)) - (m12 * (ret[i*2+1] - c2));
-		gFloat k6 = -(m21 * (ret[i*2] - c1)) + (m11 * (ret[i*2+1] - c2));
+		gFloat k6 = (-m21 * (ret[i*2] - c1)) + (m11 * (ret[i*2+1] - c2));
 		for(unsigned int j = 0; j < 3; ++j)
 			point[cnum * 3 + j] = center[j] + (k5 * ub[a1][j]) + (k6 * ub[a2][j]);
 		depth[cnum] = sa[codeN] - normal2.DotProduct(Vector(*(point+(cnum*3)), *(point+1+(cnum*3)), *(point+2+(cnum*3))));
@@ -507,36 +526,56 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 		{
 			ret[cnum*2] = ret[i*2];
 			ret[cnum*2+1] = ret[i*2+1];
-			cnum++;
+			++cnum;
 		}
 	}
 	if(cnum < 1) return 0;	// THIS SHOULD NEVER HAPPEN
 	
+	// Determine the deepest penetrating contact points
+	gFloat pen = 0.0f;
+	for(unsigned int i = 0; i < cnum; ++i)
+	{
+		if(depth[i] > pen)
+			pen = depth[i];
+	}
+
 	// Create Contacts
 	Vector contactPoint;
-	gFloat depths=0.0f;
+	int cnumUsed = 0;
 	if(code < 4)
 	{
 		for(unsigned int i = 0; i < cnum; ++i)
 		{
-			contactPoint += Vector(pa.x + point[i*3], pa.y + point[i*3+1], pa.z + point[i*3+2]);
-			depths += depth[i];
-			//contacts->SetNewContact(b1->attachedBody, b2->attachedBody, 0.2f, 0.0f, normal, contactPoint, depth[i]);
-			//contacts++;
+			// Only use the most penetration Contact Point(s)
+			// Should fix situation with tilted objects being detected penetrating on their higher/shallow end
+			if(depth[i] == pen)
+			{
+				contactPoint += Vector(pa.x+normal.x*depth[i] + point[i*3], pa.y+normal.y*depth[i] + point[i*3+1], pa.z+normal.z*depth[i] + point[i*3+2]);
+				++cnumUsed;
+				//contacts->SetNewContact(b1->attachedBody, b2->attachedBody, 0.2f, 0.0f, normal, contactPoint, depth[i]);
+				//contacts++;
+			}
 		}
 	}
 	else
 	{
 		for(unsigned int i = 0; i < cnum; ++i)
 		{
-			contactPoint += Vector(pa.x-normal.x*depth[i] + point[i*3], pa.y-normal.y*depth[i] + point[i*3+1], pa.z-normal.z*depth[i] + point[i*3+2]);
-			depths += depth[i];
-			//contacts->SetNewContact(b1->attachedBody, b2->attachedBody, 0.2f, 0.0f, normal, contactPoint, depth[i]);
-			//contacts++;
+			// Only use the most penetration Contact Point(s)
+			// Should fix situation with tilted objects being detected penetrating on their higher/shallow end
+			if(depth[i] == pen)
+			{
+				//contactPoint += Vector(pa.x-normal.x*depth[i] + point[i*3], pa.y-normal.y*depth[i] + point[i*3+1], pa.z-normal.z*depth[i] + point[i*3+2]);
+				contactPoint += Vector(pa.x + point[i*3], pa.y + point[i*3+1], pa.z + point[i*3+2]);
+				++cnumUsed;
+				//contacts->SetNewContact(b1->attachedBody, b2->attachedBody, 0.2f, 0.0f, normal, contactPoint, depth[i]);
+				//contacts++;
+			}
 		}
 	}
-	contacts->SetNewContact(b1->attachedBody, b2->attachedBody, 0.2f, 0.5f, normal, contactPoint*(1.0f/(gFloat)cnum), depths/(gFloat)cnum);
-	//return cnum;
+	contacts->SetNewContact(b1->attachedBody, b2->attachedBody, GetCoeffOfRestitution(_a,_b), 
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), normal, contactPoint*(1.0f/(gFloat)cnumUsed), pen);
+	//return cnumUsed;
    	return 1;
 }
 int CollisionTests::BoxCylinderTest(Collider* _a, Collider* _b, Contact* contacts)
@@ -678,7 +717,7 @@ int CollisionTests::CapsuleCapsuleTest(Collider* _a, Collider* _b, Contact* cont
 			d4 = SquaredDistanceOfPointFromLineSegment(c2->q, c1->p, c2->q);
 	
 	// Collision true if shortest distance between Capsules is less than the sum of their radii
-	gFloat min = std::min(std::min(std::min(d1, d2), d3), d4);
+	gFloat min = Min<gFloat>(Min<gFloat>(Min<gFloat>(d1, d2), d3), d4);
 	return min < (c1->radius+c2->radius) * (c1->radius+c2->radius);
 }
 int CollisionTests::CapsulePlaneTest(Collider* _a, Collider* _b, Contact* contacts)

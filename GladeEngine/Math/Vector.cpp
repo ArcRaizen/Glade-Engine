@@ -3,7 +3,7 @@
 
 using namespace Glade;
 
-const Vector Vector::GRAVITY = Vector(0.0f, (gFloat)-500.2f, 0.0f);
+const Vector Vector::GRAVITY = Vector(0.0f, (gFloat)-125.0f, 0.0f);
 const Vector Vector::UP = Vector(0.0f, 1.0f, 0.0f);
 const Vector Vector::DOWN = Vector(0.0f, -1.0f, 0.0f);
 const Vector Vector::RIGHT = Vector(1.0f, 0.0f, 0.0f);
@@ -109,7 +109,7 @@ Vector& Vector::operator*= (const Matrix& m)
 	y = m(0,1)*a + m(1,1)*b + m(2,1)*c + m(3,1);
 	z = m(0,2)*a + m(1,2)*b + m(2,2)*c + m(3,2);
 
-/*	w = m(0,3)*a + m(1,3)*b + m(2,3)*c + m(3,3);
+/*	gFloat w = m(0,3)*a + m(1,3)*b + m(2,3)*c + m(3,3);
 	if(w != (gFloat)1.0 && w != (gFloat)1.0)
 	{
 		x /= w;
@@ -273,12 +273,12 @@ Vector& Vector::Multiply(gFloat scalar)
 // Return this Vector * m	(Vector-Matrix Multiplication)
 Vector& Vector::Multiply(const Matrix& m)
 {
-	gFloat a=x, b=y, c=z, w;
+	gFloat a=x, b=y, c=z;
 	x = m(0,0)*a + m(1,0)*b + m(2,0)*c + m(3,0);
 	y = m(0,1)*a + m(1,1)*b + m(2,1)*c + m(3,1);
 	z = m(0,2)*a + m(1,2)*b + m(2,2)*c + m(3,2);
 	
-/*	w = m(0,3)*a + m(1,3)*b + m(2,3)*c + m(3,3);
+/*	gFloat w = m(0,3)*a + m(1,3)*b + m(2,3)*c + m(3,3);
 	if(w != (gFloat)1.0 && w != (gFloat)1.0)
 	{
 		x /= w;
@@ -378,6 +378,18 @@ Vector Vector::CrossProduct(const Vector& other) const
 	return Vector(y*other.z - z*other.y, 
 				z*other.x - x*other.z, 
 				x*other.y - y*other.x);
+}
+
+// Return the Tensor Product (Outer Product) of this Vector and other
+Matrix Vector::TensorProduct(const Vector& other) const
+{
+	gFloat temp[16] = {
+		x*other.x,	x*other.y,	x*other.z,	0.0f,
+		y*other.x,	y*other.y,	y*other.z,	0.0f,
+		z*other.x,	z*other.y,	z*other.z,	0.0f,
+		0.0f,		0.0f,		0.0f,		1.0f
+	};
+	return Matrix(temp);
 }
 
 // Return the Magnitude of this Vector
@@ -514,4 +526,42 @@ Vector Vector::VectorMax(const Vector& v1, const Vector& v2)
 		v1.x > v2.x ? v1.x : v2.x,
 		v1.y > v2.y ? v1.y : v2.y,
 		v1.z > v2.z ? v1.z : v2.z);
+}
+
+// Linear Interpolation between two vectors
+Vector Vector::Lerp(const Vector& start, const Vector& end, gFloat t)
+{
+	return start + (end - start) * Clamp<gFloat>(t, 0, 1);
+}
+
+// Spherical Linear Interpolation between two Vectors
+// Assumes each vector is already normalized
+Vector Vector::Slerp(const Vector& start, const Vector& end, gFloat t)
+{
+	gFloat dot = Vector::VectorDotProduct(start, end);
+	Clamp<gFloat>(dot, -1.0f, 1.0f);
+	gFloat theta = ACos(dot) * t;
+	Vector rel = (end -start*dot).Normalized();
+
+	return ((start * Cos(theta)) + (rel * Sin(theta)));
+}
+
+// Spherical Linear Interpolaiton between two vectors
+// Assumes each Vector is NOT already normalized, 
+// lineraly interpolates the length of the resulting vector between the lengths of start and end
+Vector Vector::Slerp2(const Vector& start, const Vector& end, gFloat t)
+{
+	Vector a = start.Normalized(), b = end.Normalized();
+	gFloat aLen = start.Magnitude(), bLen = b.Magnitude();
+	gFloat dot = Vector::VectorDotProduct(a, b);
+	Clamp<gFloat>(dot, -1.0f, 1.0f);
+	gFloat theta = ACos(dot) * t;
+	Vector rel = (end - start*dot).Normalized();
+
+	return ((a * Cos(theta)) + (rel * Sin(theta))) * (aLen + (bLen-aLen)*t);
+}
+
+Vector Vector::NLerp(const Vector& start, const Vector& end, gFloat t)
+{
+	return Vector::Lerp(start, end, t).Normalized();
 }

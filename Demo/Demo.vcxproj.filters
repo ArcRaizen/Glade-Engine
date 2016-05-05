@@ -45,20 +45,11 @@
     <ClInclude Include="Orb.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="App.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="BuoyancyDemo.h">
       <Filter>BuoyancyDemo</Filter>
     </ClInclude>
     <ClInclude Include="OctreeDemo.h">
       <Filter>OctreeDemo</Filter>
-    </ClInclude>
-    <ClInclude Include="Arcball.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DrawableOctree.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TrebuchetDemo.h">
       <Filter>TrebuchetDemo</Filter>
@@ -92,17 +83,8 @@
     <ClCompile Include="BuoyancyDemo.cpp">
       <Filter>BuoyancyDemo</Filter>
     </ClCompile>
-    <ClCompile Include="App.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="OctreeDemo.cpp">
       <Filter>OctreeDemo</Filter>
-    </ClCompile>
-    <ClCompile Include="Arcball.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DrawableOctree.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TrebuchetDemo.cpp">
       <Filter>TrebuchetDemo</Filter>

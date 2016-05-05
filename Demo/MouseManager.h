@@ -1,7 +1,5 @@
 #ifndef MOUSE_H
 #define MOUSE_H
-
-#include "Arcball.h"
 #ifndef CORE_H
 #include "Core.h"
 #endif

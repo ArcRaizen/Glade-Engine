@@ -19,12 +19,13 @@ void ParticleContactResolver::SetIterations(unsigned int iter)
 void ParticleContactResolver::ResolveContacts(ParticleContact* contactArray, unsigned int numContacts)
 {
 	unsigned int i, maxIndex=-1;
-	gFloat max, closingVel;
+	gFloat max;
 	iterationsUsed = 0;
 
 	while(iterationsUsed < iterations)
 	{
 #ifndef VERLET
+		gFLoat closingVel;
 		// Find Contact with largest closing velocity
 		max = G_MAX;
 		maxIndex = numContacts;

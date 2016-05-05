@@ -6,8 +6,8 @@ RigidBody::RigidBody()
 {
 }
 
-RigidBody::RigidBody(Vector pos, Quaternion orient, Vector vel, Vector accel, Vector angVel, Vector angAccel, gFloat lDamp, gFloat aDamp, gFloat iMass, bool ug, Vector grav) : 
-			Object(pos, accel, iMass, ug, grav), orientation(orient), velocity(vel), angularVelocity(angVel), angularAcceleration(angAccel), linearDamping(lDamp), angularDamping(aDamp)
+RigidBody::RigidBody(Vector pos, Quaternion orient, Vector vel, Vector accel, Vector angVel, Vector angAccel, gFloat lDamp, gFloat aDamp, bool ug, Vector grav) : 
+			Object(pos, accel, lDamp, ug, grav), orientation(orient), velocity(vel), angularVelocity(angVel), angularAcceleration(angAccel), angularDamping(aDamp)
 #ifdef SLEEP_TEST_ENERGY
 			, motion(30.0f), motionBias(Pow(0.5, PHYSICS_TIMESTEP))
 #endif
@@ -30,9 +30,9 @@ bool RigidBody::Update()
 
 	// Velocity Verlet Integration
 	lastAcceleration = acceleration;
-	position += (velocity * PHYSICS_TIMESTEP) + (lastAcceleration * HALF_PHYSICS_TIMESTEP_SQR);
+	centroid += (velocity * PHYSICS_TIMESTEP) + (lastAcceleration * HALF_PHYSICS_TIMESTEP_SQR);
 	Vector newAccel = force * inverseMass;
-	Vector avgAccel = ((lastAcceleration + newAccel) / (gFloat)2.0);
+	Vector avgAccel = ((lastAcceleration + newAccel) / gFloat(2.0f));
 	velocity += avgAccel * PHYSICS_TIMESTEP;
 	acceleration = newAccel;
 
@@ -58,14 +58,17 @@ bool RigidBody::Update()
 	// Normalize orientation and update transformation matrix and world inertia tensor
 	CalcDerivedData();
 
-	// RigidBody is awake, which means it's moving, which means its boundingBox needs to be updated
-	CalcBoundingBox();
-
 	// Clear forces/torques for next frame
 	force.Zero();
 	torque.Zero();
 	if(useGravity)
-		ApplyForce(gravity);
+		ApplyForce(gravity *
+#ifdef TRACK_MASS
+		mass
+#else
+		(gFloat)1.0f / inverseMass;
+#endif
+		);
 
 	// Check motion/sleep
 	if(canSleep)
@@ -82,18 +85,18 @@ bool RigidBody::Update()
 										position + Vector(transformationMatrix(1,0), transformationMatrix(1,1), transformationMatrix(1,2))};
 		for(unsigned int i = 0; i < 3; ++i)
 		{
-			if(sleepBoxPosistions[i].x < sleepBoxes[i].min.x) sleepBoxes[i].min.x = sleepBoxPosistions[i].x;
-			else if(sleepBoxPosistions[i].x > sleepBoxes[i].max.x) sleepBoxes[i].max.x = sleepBoxPosistions[i].x;
-			if(sleepBoxPosistions[i].y < sleepBoxes[i].min.y) sleepBoxes[i].min.y = sleepBoxPosistions[i].y;
-			else if(sleepBoxPosistions[i].y > sleepBoxes[i].max.y) sleepBoxes[i].max.y = sleepBoxPosistions[i].y;
-			if(sleepBoxPosistions[i].z < sleepBoxes[i].min.z) sleepBoxes[i].min.z = sleepBoxPosistions[i].z;
-			else if(sleepBoxPosistions[i].z > sleepBoxes[i].max.z) sleepBoxes[i].max.z = sleepBoxPosistions[i].z;
+			if(sleepBoxPosistions[i].x < sleepBoxes[i].minimum.x) sleepBoxes[i].minimum.x = sleepBoxPosistions[i].x;
+			else if(sleepBoxPosistions[i].x > sleepBoxes[i].maximum.x) sleepBoxes[i].maximum.x = sleepBoxPosistions[i].x;
+			if(sleepBoxPosistions[i].y < sleepBoxes[i].minimum.y) sleepBoxes[i].minimum.y = sleepBoxPosistions[i].y;
+			else if(sleepBoxPosistions[i].y > sleepBoxes[i].maximum.y) sleepBoxes[i].maximum.y = sleepBoxPosistions[i].y;
+			if(sleepBoxPosistions[i].z < sleepBoxes[i].minimum.z) sleepBoxes[i].minimum.z = sleepBoxPosistions[i].z;
+			else if(sleepBoxPosistions[i].z > sleepBoxes[i].maximum.z) sleepBoxes[i].maximum.z = sleepBoxPosistions[i].z;
 		}
 
 		// Get max dimensions of the sleep boxes
-		gFloat maxLinearDimension = MAX(MAX(sleepBoxes[0].Width(), sleepBoxes[0].Height()), sleepBoxes[0].Depth());
-		gFloat maxAngularDimension =  MAX(MAX(MAX(sleepBoxes[1].Width(), sleepBoxes[1].Height()), sleepBoxes[1].Depth()), 
-									MAX(MAX(sleepBoxes[2].Width(), sleepBoxes[2].Height()), sleepBoxes[2].Depth()));
+		gFloat maxLinearDimension = Max(Max(sleepBoxes[0].Width(), sleepBoxes[0].Height()), sleepBoxes[0].Depth());
+		gFloat maxAngularDimension = Max(Max(Max(sleepBoxes[1].Width(), sleepBoxes[1].Height()), sleepBoxes[1].Depth()), 
+									Max(Max(sleepBoxes[2].Width(), sleepBoxes[2].Height()), sleepBoxes[2].Depth()));
 
 		// If any sleep box is larger than the maximum threshold -> The sleep test has failed: reset them, the object isn't going to sleep yet
 		if(maxLinearDimension > sleepLinearEpsilon || maxAngularDimension > sleepAngularEpsilon)
@@ -107,18 +110,33 @@ bool RigidBody::Update()
 	return true;
 }
 
+void RigidBody::Render() { GraphicsLocator::GetGraphics()->Render(shaderResource, 0); }
+
 void RigidBody::CalcDerivedData()
 {
 	// Safety - Make sure orientation quaternion is normalized
 	orientation.NormalizeInPlace();
 
 	// Calculate transformation matrix from its current state
-	transformationMatrix.ComposeTransformationMatrix(&position, &orientation, nullptr);
+	transformationMatrix.ComposeTransformationMatrix(&centroid, &orientation, nullptr);
+
+	// Update position now that Centroid has moved
+	position = transformationMatrix.Times3(-localCentroid) + centroid;
 
 	// Calculate inverse inertia tensor in world space
-//	inverseInertiaTensorWorld = ((transformationMatrix.Inverse3() * inverseInertiaTensor) * transformationMatrix.GetMatrix3());
-//	inverseInertiaTensorWorld = transformationMatrix.Multiply3(inverseInertiaTensor).MultiplyInverse3(transformationMatrix);
-	inverseInertiaTensorWorld = transformationMatrix.MultiplyInverse3(inverseInertiaTensor).Multiply3(transformationMatrix);
+	inverseInertiaTensorWorld = (transformationMatrix.Times3(inverseInertiaTensor)).TimesTranspose3(transformationMatrix);
+//	inverseInertiaTensorWorld = (transformationMatrix.Transpose3Times(inverseInertiaTensor)).Times3(transformationMatrix);
+
+
+/*
+	Matrix test =  (transformationMatrix.Times3(inverseInertiaTensor)).TimesTranspose3(transformationMatrix);
+	Matrix test2 = transformationMatrix.Times3((inverseInertiaTensor).TimesTranspose3(transformationMatrix));
+	//										^^^ ASSOCIATIVE PAIRS vvv  
+	Matrix test3 = (transformationMatrix.Transpose3Times(inverseInertiaTensor)).Times3(transformationMatrix);
+	Matrix test4 = transformationMatrix.Transpose3Times((inverseInertiaTensor).Times3(transformationMatrix));
+*/
+	// RigidBody is moving was moved by a collision, which means its BoundingBox needs to be updated
+	CalcBoundingBox();
 }
 
 void RigidBody::CalcBoundingBox()
@@ -133,12 +151,12 @@ void RigidBody::CalcBoundingBox()
 		{
 			colliders[i]->CalcTransformAndDerivedGeometricData(transformationMatrix);
 			colliderBounds = colliders[i]->GetBounds();
-			if(colliderBounds.max.x > boundingBox.max.x)	boundingBox.max.x = colliderBounds.max.x;
-			if(colliderBounds.max.y > boundingBox.max.y)	boundingBox.max.x = colliderBounds.max.y;
-			if(colliderBounds.max.z > boundingBox.max.z)	boundingBox.max.x = colliderBounds.max.z;
-			if(colliderBounds.min.x < boundingBox.min.x)	boundingBox.min.x = colliderBounds.min.x;
-			if(colliderBounds.min.y < boundingBox.min.y)	boundingBox.min.x = colliderBounds.min.y;
-			if(colliderBounds.min.z < boundingBox.min.z)	boundingBox.min.x = colliderBounds.min.z;
+			if(colliderBounds.maximum.x > boundingBox.maximum.x)	boundingBox.maximum.x = colliderBounds.maximum.x;
+			if(colliderBounds.maximum.y > boundingBox.maximum.y)	boundingBox.maximum.x = colliderBounds.maximum.y;
+			if(colliderBounds.maximum.z > boundingBox.maximum.z)	boundingBox.maximum.x = colliderBounds.maximum.z;
+			if(colliderBounds.minimum.x < boundingBox.minimum.x)	boundingBox.minimum.x = colliderBounds.minimum.x;
+			if(colliderBounds.minimum.y < boundingBox.minimum.y)	boundingBox.minimum.x = colliderBounds.minimum.y;
+			if(colliderBounds.minimum.z < boundingBox.minimum.z)	boundingBox.minimum.x = colliderBounds.minimum.z;
 		}
 	}
 	else
@@ -161,30 +179,112 @@ void RigidBody::CalcBoundingBox()
 	}
 
 	// Calculate maximum radius of AABB
-	radius = (boundingBox.max - boundingBox.min).Magnitude() / (gFloat)2.0;
+	radius = (boundingBox.maximum - boundingBox.minimum).Magnitude() / (gFloat)2.0;
 
 	recalcAABB = false;
 }
 
+#ifdef SLEEP_TEST_BOX
 void RigidBody::InitializeSleepBoxes()
 {
 	sleepSteps = 0;
-	sleepBoxes[0].min = sleepBoxes[0].max = position;
-	sleepBoxes[1].min = sleepBoxes[1].max = position + Vector(transformationMatrix(0,0), transformationMatrix(0,1), transformationMatrix(0,2));
-	sleepBoxes[2].min = sleepBoxes[2].max = position + Vector(transformationMatrix(1,0), transformationMatrix(1,1), transformationMatrix(1,2));
+	sleepBoxes[0].minimum = sleepBoxes[0].maximum = position;
+	sleepBoxes[1].minimum = sleepBoxes[1].maximum = position + Vector(transformationMatrix(0,0), transformationMatrix(0,1), transformationMatrix(0,2));
+	sleepBoxes[2].minimum = sleepBoxes[2].maximum = position + Vector(transformationMatrix(1,0), transformationMatrix(1,1), transformationMatrix(1,2));
 }
+#endif
+
+void RigidBody::AddCollider(Collider* collider)
+{
+	// Infinite Mass collider needs special attention
+	// Overrides all other colliders
+	if(collider->GetInverseMass() == gFloat(0.0f))
+	{
+		for(auto iter = colliders.begin(); iter != colliders.end(); ++iter)
+			delete *iter;
+		colliders.clear();
+
+		colliders.push_back(collider);
+		localCentroid = collider->GetPosition();
+		inverseMass = gFloat(0.0f);
+		inverseInertiaTensor = Matrix::INFINITE_MASS_INERTIA_TENSOR;
+		CalcDerivedData();
+		SetAwake(false);	// Infinite Mass can't move by definition, so set to asleep for now
+		return;
+	}
+
+	colliders.push_back(collider); 
+
+	// Reset Centroid and mass
+	localCentroid.Zero();
+	inverseMass = 0.0f;
+#ifdef TRACK_MASS
+	mass = 0.0f;
+#else
+	gFloat mass = 0.0f;
+#endif
+
+	// Calculate local Centroid and mass
+	gFloat cMass;
+	for(auto iter = colliders.begin(); iter != colliders.end(); ++iter)
+	{
+		cMass = collider->GetMass();
+
+		// accumulate mass and weighted contribution to Centroid
+		mass += cMass;
+		centroid += collider->GetPosition() * cMass;
+	}
+
+	// Calculate inverse mass and Centroid
+	inverseMass = gFloat(1.0f) / mass;
+	localCentroid *= inverseMass;
+
+	// Calculate local inertia tensor
+	Matrix inertia, offset, tensorProd;
+	Vector r;
+	gFloat rDotR;
+	inertia.Zero();
+	for(auto iter = colliders.begin(); iter != colliders.end(); ++iter)
+	{
+		offset = collider->GetOffset();
+		r = Vector(offset(3,0), offset(3,1), offset(3,2));
+		rDotR = r.DotProduct(r);
+		tensorProd = r.TensorProduct(r);
+
+		// Accumulate local inertia tensor contribution using Parallel Axis Theorem
+		//	(Moment of Inertia around axis 'b' parallel to axis through center of mass 'a' when 'b' is 'd' units from 'a'
+		//			= MomentofInertia around 'a' + mass * d^2
+		inertia += collider->GetInertiaTensor() + (((Matrix()*rDotR) - tensorProd) * collider->GetMass());
+		inertia(3,3) = 1.0f;
+	}
+
+	// Calculate Inverse Inertia Tensor
+	inverseInertiaTensor = inertia.Inverse3();
+
+	CalcDerivedData();
+	SetAwake(true);
+}
+
+void RigidBody::LoadMesh(MeshData* meshData)
+{
+	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(meshData, "../GladeEngine/box.png");
+	shaderResource->world = &transformationMatrix;
+}
+
+void RigidBody::LoadMesh(const char* filename)
+{}
 
 void RigidBody::ApplyForceAtPoint(const Vector& f, const Vector& p)
 {
 	force += f;
-	torque += (p - position).CrossProduct(f);
+	torque += (p - centroid).CrossProduct(f);
 	isAwake = true;
 }
 
 void RigidBody::ApplyForceAtLocalPoint(const Vector& f, const Vector& p)
 {
 	force += f;
-	torque += (GetPointInWorldSpace(p) - position).CrossProduct(f);
+	torque += (GetPointInWorldSpace(p) - centroid).CrossProduct(f);
 	isAwake = true;
 }
 
@@ -211,40 +311,9 @@ void RigidBody::SetAwake(bool awake/*=true*/)
 	}
 }
 
-void RigidBody::RegisterForceGenerator(int id)
-{
-	for(unsigned int i = 0; i < generatorIDs.size(); ++i)
-	{
-		if(generatorIDs[i] == id) return;
-	}
+unsigned int RigidBody::GetColliders(std::vector<Collider*>& c) { c = colliders; return colliders.size(); }
 
-	generatorIDs.push_back(id);
-}
-
-void RigidBody::UnregisterForceGenerator(int id)
-{
-	for(unsigned int i = 0; i < generatorIDs.size(); ++i)
-	{
-		if(generatorIDs[i] == id)
-		{
-			generatorIDs.erase(generatorIDs.begin() + i);
-			return;
-		}
-	}
-}
-
-std::vector<int> RigidBody::GetRegisteredForceGenerators()
-{
-	return generatorIDs;
-}
-
-
-void RigidBody::AllowSetVelocity() { properties |= OVERRIDE_VELOCITY; }
-void RigidBody::DisallowSetVelocity() { properties &= ~OVERRIDE_VELOCITY; }
-bool RigidBody::CheckAllowSetVelocity() { return properties & OVERRIDE_VELOCITY; }
-
-
-Vector RigidBody::GetVelocity() { return velocity; }
+Vector RigidBody::GetVelocity() const { return velocity; }
 void RigidBody::SetVelocity(const Vector& v)
 {
 	if(!(properties & OVERRIDE_VELOCITY)) return;
@@ -257,7 +326,7 @@ void RigidBody::SetVelocity(const gFloat x, const gFloat y, const gFloat z)
 	velocity.y = y;
 	velocity.z = z;
 }
-Vector RigidBody::GetAngularVelocity() { return angularVelocity; }
+Vector RigidBody::GetAngularVelocity() const { return angularVelocity; }
 void RigidBody::SetAngularVelocity(const Vector& v)
 {
 	if(!(properties & OVERRIDE_ANGULAR_VELOCITY)) return;
@@ -265,25 +334,40 @@ void RigidBody::SetAngularVelocity(const Vector& v)
 }
 void RigidBody::SetAngularVelocity(const gFloat x, const gFloat y, const gFloat z)
 {
-	if(!(properties & OVERRIDE_VELOCITY)) return;
+	if(!(properties & OVERRIDE_ANGULAR_VELOCITY)) return;
 	angularVelocity.x = x;
 	angularVelocity.y = y;
 	angularVelocity.z = z;
 }
+Vector RigidBody::GetAngularAcceleration() const { return angularAcceleration; }
+void RigidBody::SetAngularAcceleration(const Vector& v)
+{
+	if(!(properties & OVERRIDE_ANGULAR_ACCELERATION)) return;
+	angularAcceleration = v;
+}
+void RigidBody::SetAngularAcceleration(const gFloat x, const gFloat y, const gFloat z)
+{
+	if(!(properties & OVERRIDE_ANGULAR_ACCELERATION)) return;
+	angularAcceleration.x = x;
+	angularAcceleration.y = y;
+	angularAcceleration.z = z;
+}
 
-void RigidBody::SetInverseInertiaTensor(const Matrix& m) { inverseInertiaTensor = m; CalcDerivedData(); }
+Quaternion RigidBody::GetOrientation() const { return orientation; }
 
-Matrix RigidBody::GetTransformMatrix() { return transformationMatrix; }
-Matrix RigidBody::GetInverseInertiaTensorWorld() { return inverseInertiaTensorWorld; }
+Matrix RigidBody::GetInverseInertiaTensorWorld() const { return inverseInertiaTensorWorld; }
+void RigidBody::GetInverseInertiaTensorWorld(Matrix* m) const { *m = inverseInertiaTensorWorld; }
 
 Vector RigidBody::GetLastFrameAcceleration() const { return lastAcceleration; }
-void RigidBody::ForceSetPosition(const Vector& p) { position = p; }
+void RigidBody::ForceSetPosition(const Vector& p) { position = p; UpdateCentroidFromPosition(); }
+void RigidBody::ForceSetCentroid(const Vector& c) { centroid = c; UpdatePositionFromCentroid(); }
 void RigidBody::ForceSetOrientation(const Quaternion& o) { orientation = o; }
 void RigidBody::ForceSetVelocity(const Vector& v) { velocity = v; }
 void RigidBody::ForceSetAngularVelocity(const Vector& v) { angularVelocity = v; }
 void RigidBody::ForceSetAcceleration(const Vector& a) { acceleration = a; }
 void RigidBody::ForceSetAngularAcceleration(const Vector& a) { angularAcceleration = a; }
-void RigidBody::ForceAddPosition(const Vector& p) { position += p; }
+void RigidBody::ForceAddPosition(const Vector& p) { position += p; centroid += p; }
+void RigidBody::ForceAddCentroid(const Vector& c) { centroid += c; position += c; }
 void RigidBody::ForceAddOrientation(const Vector& o) { /*orientation += (orientation * (Quaternion(o.x,o.y,o.z,0.0f) * 0.5f));*/
 orientation.AddRotation(o, 1);}
 void RigidBody::ForceAddVelocity(const Vector& v) {	velocity += v; }

@@ -1,26 +1,23 @@
 #pragma once
-#ifndef APP_H
-#include "App.h"
-#endif
-
 #include "MouseManager.h"
 #include "KeyboardManager.h"
+#include "Glade.h"
 
-class RigidBodyDemo : public App
+using namespace Glade;
+class RigidBodyDemo : public GApplication
 {
 public:
 	RigidBodyDemo();
 	~RigidBodyDemo();
 
-	void Update(float dt);
+	bool Initialize();
+	bool Update(float dt);
 	void Render();
 
 private:
 	RigidBody* box, *plane;
+	RigidBody* box2, *box3;
+	PhysicMaterial* boxMaterial, *planeMaterial;
 	World* world;
-
-	Vector cameraPosition;
-	Quaternion cameraOrientation;
-	Matrix cameraTransform;
 };
 

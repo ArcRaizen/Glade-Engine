@@ -10,8 +10,9 @@ BuoyancyDemo::~BuoyancyDemo()
 {
 }
 
-void BuoyancyDemo::Update(float dt)
+bool BuoyancyDemo::Update(float dt)
 {
+	return true;
 }
 
 void BuoyancyDemo::Draw()
