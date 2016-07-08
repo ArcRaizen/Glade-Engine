@@ -78,6 +78,7 @@ private:
 	void	ForceAddAngularVelocity(const Vector& v);
 	void	ForceAddAcceleration(const Vector& a);
 	void	ForceAddAngularAcceleration(const Vector& a);
+	void	SetSolved();
 
 protected:
 	// Static Characteristics
@@ -99,6 +100,8 @@ protected:
 	Quaternion	orientation;
 
 	Vector	torque;
+
+	bool solved;
 
 private:
 #ifdef SLEEP_TEST_ENERGY

@@ -3,6 +3,9 @@
 #define GLADE_CAMERA_H
 #include "../RigidBody.h"
 #include "../Math/Matrix.h"
+#ifdef FRUSTUM_CULLING_GEOMETRIC
+#include "../Math/Plane.h"
+#endif
 
 namespace Glade {
 class Camera
@@ -10,6 +13,8 @@ class Camera
 public:
 	Camera();
 	~Camera();
+
+	enum FrustumTest { OUTSIDE=0, INSIDE, INTERSECT };
 
 	void Update(gFloat dt);
 private:
@@ -19,8 +24,20 @@ public:
 	// Setup View and Projection Matrices
 	void LookAt(const Vector& eye, const Vector& target, const Vector& up);
 	void FPSView(const Vector& eye, gFloat pitch, gFloat yaw, gFloat roll=gFloat(0.0f));
-	void SetPerspective(gFloat fov, gFloat aspect, gFloat near, gFloat far);
+	void SetPerspectiveFoVY(gFloat fovy, gFloat aspect, gFloat near, gFloat far);	// Set Perspective projection given vertical Field-of-View
+	void SetPerspectiveFoVX(gFloat fovx, gFloat aspect, gFloat near, gFloat far);	// Set perspective projection given horizonal Field-of-View
 	void SetOrtho(gFloat width, gFloat height, gFloat near, gFloat far);
+
+	// Frustum Culling functions
+#ifdef FRUSTUM_CULLING_SPHERES
+	int IsSphereInFrustum(Object* o);
+#else
+	int IsBoxInFrustum(Object* o);
+	int IsBoxInFrustum(AABB& aabb);
+#endif
+#ifdef FRUSTUM_CULLING_GEOMETRIC
+	void CalcPlanes();
+#endif
 
 	// Move/Modify the camera
 	void Strafe(gFloat d);			// move left/right
@@ -65,7 +82,8 @@ public:
 	Vector GetRight() const;
 	Vector GetUp() const;
 	Vector GetForward() const;
-	gFloat GetFoV() const;
+	gFloat GetFoVY() const;
+	gFloat GetFoVX() const;
 	gFloat GetAspect() const;
 	gFloat GetZNear() const;
 	gFloat GetZFar() const;
@@ -93,13 +111,25 @@ private:
 	// Properties
 	Vector position;
 	Quaternion orientation;
-	gFloat fov, aspect;
+	gFloat aspect;					// Aspect Ratio (width/height)
+	gFloat fovy, fovx;				// Vertical/Horizontal Field of View
+										// Aspect = Tan(fovx/2) / Tan(fovy/2)
 	gFloat zNear, zFar;
 	gFloat nearWidth, nearHeight;	// width/height of near plane
 	gFloat farWidth, farHeight;		// width/height of far plane
 	bool viewDirty;		// Does the View matrix need updating after
 							// change to camera's position or orientation
 							// Follow/Watch behavior overrides this
+#ifdef FRUSTUM_CULLING_RADAR
+	gFloat secFoVY, secFoVX;		// Secant (1 / cos) of the field-of-view angles
+									// Used during frustum culling, they don't change once the project matrix is set
+									// so we can precompute and save them early
+#endif
+
+	// Frustum Culling properties
+#ifdef FRUSTUM_CULLING_GEOMETRIC
+	Plane planes[6];
+#endif
 };
 }	// namespace
 #endif	// GLADE_CAMERA_H

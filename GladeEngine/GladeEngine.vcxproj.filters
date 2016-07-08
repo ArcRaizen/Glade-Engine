@@ -165,9 +165,6 @@
     <ClInclude Include="Utils\Trace.h">
       <Filter>Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Timer.h">
-      <Filter>Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Utils.h">
       <Filter>Utils</Filter>
     </ClInclude>
@@ -239,6 +236,15 @@
     </ClInclude>
     <ClInclude Include="System\KeyCodes.h">
       <Filter>System\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Ray.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Timer.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Graphics\FontDraw.h">
+      <Filter>System\Graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -326,9 +332,6 @@
     <ClCompile Include="Utils\Trace.cpp">
       <Filter>Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\Timer.cpp">
-      <Filter>Utils</Filter>
-    </ClCompile>
     <ClCompile Include="Sleep.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -373,6 +376,12 @@
     </ClCompile>
     <ClCompile Include="System\Arcball\Arcball.cpp">
       <Filter>System\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Timer.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Graphics\FontDraw.cpp">
+      <Filter>System\Graphics</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

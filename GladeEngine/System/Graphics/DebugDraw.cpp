@@ -28,6 +28,7 @@ bool DebugDraw::InitDebugDraw()
 
 	sDebugViewMatrix = gpDebugEffect->GetVariableByName("viewMatrix")->AsMatrix();
 	sDebugProjMatrix = gpDebugEffect->GetVariableByName("projectionMatrix")->AsMatrix();
+	sColor = gpDebugEffect->GetVariableByName("color")->AsVector();
 	sDebugTechnique = gpDebugEffect->GetTechniqueByName("ColorTechnique");
 
 	// Setup layout of data that goes into shader
@@ -35,8 +36,6 @@ bool DebugDraw::InitDebugDraw()
 	{	
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,
 		0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,
-		0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
 	unsigned int numElements = sizeof(vertexDesc) / sizeof(vertexDesc[0]);
@@ -47,7 +46,7 @@ bool DebugDraw::InitDebugDraw()
 		passDesc.IAInputSignatureSize, &gpDebugLayout)))
 		return false;
 
-	vertexBufferMaxSize = 20;
+	vertexBufferMaxSize = 100;
 	vertices = new SVertexC[vertexBufferMaxSize];
 
 	// Buffer Descriptipn
@@ -69,15 +68,20 @@ bool DebugDraw::InitDebugDraw()
 	return true;
 }
 
-void DebugDraw::ReleaseDebugDraw()
+void DebugDraw::Shutdown()
 {
-
+	gpDebugLayout->Release();
+	gpDebugLayout = 0;
+	gpDebugEffect->Release();
+	gpDebugEffect = 0;
+	vertexBuffer->Release();
+	vertexBuffer = 0;
 }
 
 void DebugDraw::Render(Matrix view, Matrix proj)
 {
 	// Set settings for DebugDraw
-	devCon->RSSetState(g->gpRasterStateWireframe);
+	devCon->RSSetState(g->gpRasterStateSolid);
 	devCon->IASetInputLayout(gpDebugLayout);
 	sDebugViewMatrix->SetMatrix((float*)view);
 	sDebugProjMatrix->SetMatrix((float*)proj);
@@ -97,17 +101,18 @@ void DebugDraw::Render(Matrix view, Matrix proj)
 	sDebugTechnique->GetPassByIndex(0)->Apply(0, devCon);	
 
 	vertexBufferCounter = 0;
-	std::queue<int> q;
+	std::queue<DQ> q;
 	while(!drawQueue.empty())
 	{
 		if(maintainBetweenDraw)
 			q.push(drawQueue.front());
 
-		switch(drawQueue.front())
+		switch(drawQueue.front().i)
 		{
 			case 1:	DrawLine(); break;
 			case 2: DrawTriangle(); break;
 			case 3: DrawSquare(); break;
+			case 4: DrawBox(); break;
 			default:
 				AssertMsg(false, "Attempted to draw invalid primitive shape");
 				break;
@@ -116,9 +121,9 @@ void DebugDraw::Render(Matrix view, Matrix proj)
 		drawQueue.pop();
 	}
 
-	SVertexC v2[20];
-	for(unsigned int i = 0; i < vertexBufferCounter; ++i)
-		v2[i] = vertices[i];
+//	SVertexC v2[20];
+//	for(unsigned int i = 0; i < vertexBufferCounter; ++i)
+//		v2[i] = vertices[i];
 
 	if(maintainBetweenDraw)
 	{
@@ -152,11 +157,9 @@ void DebugDraw::PushLine(Vector p1, Vector p2, Color c)
 		IncreaseVertexBufferSize();
 
 	// add new vertices onto buffer (using vertexBufferSize as index)
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p1.x, p1.y, p1.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p2.x, p2.y, p2.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	drawQueue.push(1);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p1.x, p1.y, p1.z);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p2.x, p2.y, p2.z);
+	drawQueue.push(DQ(1,c));
 }
 void DebugDraw::PushTriangle(Vector p1, Vector p2, Vector p3, Color c)
 {
@@ -171,13 +174,10 @@ void DebugDraw::PushTriangle(Vector p1, Vector p2, Vector p3, Color c)
 		IncreaseVertexBufferSize();
 
 	// add new vertices onto buffer (using vertexBufferSize as index)
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p1.x, p1.y, p1.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p2.x, p2.y, p2.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p3.x, p3.y, p3.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	drawQueue.push(2);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p1.x, p1.y, p1.z);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p2.x, p2.y, p2.z);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p3.x, p3.y, p3.z);
+	drawQueue.push(DQ(2,c));
 }
 void DebugDraw::PushSquare(Vector p1, Vector p2, Vector p3, Vector p4, Color c)
 {
@@ -192,20 +192,14 @@ void DebugDraw::PushSquare(Vector p1, Vector p2, Vector p3, Vector p4, Color c)
 		IncreaseVertexBufferSize();
 
 	// add new vertices onto buffer (using vertexBufferSize as index)
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p1.x, p1.y, p1.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p2.x, p2.y, p2.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p3.x, p3.y, p3.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p2.x, p2.y, p2.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p4.x, p4.y, p4.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	D3DXVECTOR3(p3.x, p3.y, p3.z);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p1.x, p1.y, p1.z);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p2.x, p2.y, p2.z);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p3.x, p3.y, p3.z);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p2.x, p2.y, p2.z);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p4.x, p4.y, p4.z);
+	vertices[vertexBufferSize++].position =	D3DXVECTOR3(p3.x, p3.y, p3.z);
 
-	drawQueue.push(6);
+	drawQueue.push(DQ(3,c));
 }
 
 void DebugDraw::PushBox(Vector center, Vector extents, Color c)
@@ -225,85 +219,51 @@ void DebugDraw::PushBox(Vector center, Vector extents, Color c)
 
 	// Horrible Code - DO NOT LOOK
 #pragma region BOX VERTICES
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, -d);		// Front 1
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, +h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, -d);		// Front 2
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, -h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, +d);		// Back 1
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, -h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, +d);		// Back 2
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, +h, -d);		// Top 1
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, +h, -d);		// Top 2
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, -d);		// Bot 1
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, -h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, -h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, -d);		// Bot 2
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, -h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, +d);		// Left 1
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, +h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, +d);		// Left 2
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, +h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(-w, -h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, -h, -d);		// Right 1
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, -d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, -h, -d);		// Right 2
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, +h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	vertices[vertexBufferSize].position =	cen + D3DXVECTOR3(+w, -h, +d);
-	vertices[vertexBufferSize++].color =	D3DXVECTOR4(c.r, c.b, c.g, c.a);
-	// I just don't know what I expected
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, -d);		// Front 1
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, +h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, -d);		// Front 2
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, -h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, +d);		// Back 1
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, -h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, +d);		// Back 2
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, +h, -d);		// Top 1
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, +h, -d);		// Top 2
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, -d);		// Bot 1
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, -h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, -h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, -d);		// Bot 2
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, -h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, +d);		// Left 1
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, +h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, +d);		// Left 2
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, +h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(-w, -h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, -h, -d);		// Right 1
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, -d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, -h, -d);		// Right 2
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, +h, +d);
+	vertices[vertexBufferSize++].position =	cen + D3DXVECTOR3(+w, -h, +d);
+	// I just don't know what I expected FUCK
 #pragma endregion
+	drawQueue.push(DQ(4,c));
 }
 
 void DebugDraw::DrawLine() 
 { 
 	devCon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_LINELIST);
+	sColor->SetFloatVector((float*)drawQueue.front().c);
 	devCon->Draw(2, vertexBufferCounter);
 	vertexBufferCounter += 2;
 }
@@ -311,15 +271,26 @@ void DebugDraw::DrawTriangle()
 {
 	devCon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	devCon->Draw(3, vertexBufferCounter);
+	sColor->SetFloatVector((float*)drawQueue.front().c);
 	vertexBufferCounter += 3;
 }
 void DebugDraw::DrawSquare()
 { 
 	devCon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	devCon->IASetInputLayout(gpDebugLayout);
+	sColor->SetFloatVector((float*)drawQueue.front().c);
 	sDebugTechnique->GetPassByIndex(0)->Apply(0, devCon);
 	devCon->Draw(6, vertexBufferCounter);
 	vertexBufferCounter += 6;
+}
+void DebugDraw::DrawBox()
+{
+	devCon->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+	devCon->IASetInputLayout(gpDebugLayout);
+	sColor->SetFloatVector((float*)drawQueue.front().c);
+	sDebugTechnique->GetPassByIndex(0)->Apply(0, devCon);
+	devCon->Draw(36, vertexBufferCounter);
+	vertexBufferCounter += 36;
 }
 
 inline

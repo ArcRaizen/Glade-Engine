@@ -26,6 +26,37 @@
 #define SOLVE_PENETRATION_ITERATIVE
 #endif
 
+// Define whether Bounding Spheres or AABB are used for Frustum Culling tests for rendering
+// Comment out the following line to use AABBs. Leave the following line to use Spheres
+//#define FRUSTUM_CULLING_SPHERES
+#ifndef FRUSTUM_CULLING_SPHERES
+	#define FRUSTUM_CULLING_BOXES
+	#define FRUSTUM_CULLING_GEOMETRIC
+
+	// When testing against Boxes, we will initially test against the boxes that represent
+	// each cell in the Spatial Hash used to organize the World.
+	// Rigorous will do an additional test against each Object in a passing Spatial Hash cell.
+	// Lenient will draw every Object in a passing Spatial Hash Cell without doing an extra test
+	// Comment out the following line to use Lenient. Leave the following line to use Rigorous.
+//	#define FRUSTUM_CULLING_RIGOROUS
+	#ifndef FRUSTUM_CULLING_RIGOROUS
+	#define FRUSTUM_CULLING_LENIENT
+	#endif
+
+#else
+	// Extra option available is using FRUSTUM_CULLING_SPHERES
+	// Define which method of Frustum Culling with Spheres will be used for rendering.
+	// Radar calculates the relative position of vertices to the camera and checks if they are 
+	//		inside of the view Frustum.
+	// Geometric calculates the 6 planes that make up the view Frustum each frame and tests whether
+	//		vertices are on the inside/outside of those planes.
+	// Comment out the following line to use Geometric. Leave the following line to use Radar.
+	#define FRUSTUM_CULLING_RADAR
+	#ifndef FRUSTUM_CULLING_RADAR
+	#define FRUSTUM_CULLING_GEOMETRIC
+	#endif
+#endif
+
 // Define which sleep test to use for RigidBodies: Energy or SleepBox
 // Energy tests a running weigted average (RWA) of the linear and angular energy of a RigidBody
 //		If this energy falls below a threshold for a given amount of time, the RigidBody is put to sleep

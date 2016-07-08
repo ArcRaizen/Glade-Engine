@@ -69,7 +69,7 @@ namespace Glade {
 
 
 #ifdef COMPILE_WITHOUT_TRACE
-	#define TRACE_IF(level, traceString() if(0)
+	#define TRACE_IF(level, traceString) if(0)
 	#define TRACE_FILE_IF(level) if(0)
 	#define TRACE_FUNCTION_ONLY(level) {}
 	#define TRACE_METHOD_ONLY(level) {}

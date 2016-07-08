@@ -3,38 +3,32 @@
 using namespace Glade;
 
 const CollisionTests::FP CollisionTests::Tests[28] = {
-	&CollisionTests::SphereSphereTest, &CollisionTests::SphereBoxTest, &CollisionTests::SphereCylinderTest, &CollisionTests::SphereConeTest, 
-	&CollisionTests::SphereCapsuleTest, &CollisionTests::SpherePlaneTest, &CollisionTests::SphereMeshTest, &CollisionTests::BoxBoxTest, 
-	&CollisionTests::BoxCylinderTest, &CollisionTests::BoxConeTest, &CollisionTests::BoxCapsuleTest, &CollisionTests::BoxPlaneTest, 
-	&CollisionTests::BoxMeshTest, &CollisionTests::CylinderCylinderTest, &CollisionTests::CylinderConeTest, &CollisionTests::CylinderCapsuleTest, 
-	&CollisionTests::CylinderPlaneTest, &CollisionTests::CylinderMeshTest, &CollisionTests::ConeConeTest, &CollisionTests::ConeCapsuleTest, 
-	&CollisionTests::ConePlaneTest, &CollisionTests::ConeMeshTest, &CollisionTests::CapsuleCapsuleTest, &CollisionTests::CapsulePlaneTest,
-	&CollisionTests::CapsuleMeshTest, &CollisionTests::PlanePlaneTest, &CollisionTests::PlaneMeshTest, &CollisionTests::MeshMeshTest
+	&CollisionTests::SphereSphereTest, &CollisionTests::SphereBoxTest, &CollisionTests::SphereCapsuleTest, &CollisionTests::SphereCylinderTest,	&CollisionTests::SphereConeTest, &CollisionTests::SpherePlaneTest, &CollisionTests::GJKTest, 
+	&CollisionTests::BoxBoxTest, &CollisionTests::GJKTest, &CollisionTests::GJKTest, &CollisionTests::GJKTest, &CollisionTests::BoxPlaneTest, &CollisionTests::GJKTest, 
+	&CollisionTests::CapsuleCapsuleTest, &CollisionTests::GJKTest, &CollisionTests::GJKTest, &CollisionTests::CapsulePlaneTest, &CollisionTests::GJKTest,
+	&CollisionTests::GJKTest, &CollisionTests::GJKTest, &CollisionTests::CylinderPlaneTest, &CollisionTests::GJKTest, 
+	&CollisionTests::GJKTest, &CollisionTests::ConePlaneTest, &CollisionTests::GJKTest,  
+	&CollisionTests::PlanePlaneTest, &CollisionTests::GJKTest, 
+	&CollisionTests::GJKTest
 	};
 
 const int CollisionTests::helperIndices[7] = { 0, 6, 11, 15, 18, 20, 21 };
 
 gFloat CollisionTests::AABBTestEpsilon = gFloat(0.03f);
+gFloat CollisionTests::EPADistanceThreshold = gFloat(0.001f);
 
 int CollisionTests::TestCollision(Collider* a, Collider* b, Contact* contacts)
 {
-	// These Collider's cannot collide
-	// Either 1 of them is turned off, or they do not have matching Collision Masks
-	if(!a->enabled || !b->enabled || (a->collisionMask & b->collisionMask == 0)) return 0;
-
 	int _a = (int)a->GetShape(), _b = (int)b->GetShape();
 
-	// Swap collider's for simplicity (a is always 1st parameter sent)
-	if(_a > _b)
-	{
-		Swap(a, b);
-		SwapXOR(_a, _b);
-	}
-
 	// Call appropriate function
-	return Tests[helperIndices[_a] + _b](a, b, contacts);
+	if(_a > _b)
+		return Tests[helperIndices[_b] + _a](b, a, contacts);
+	else
+		return Tests[helperIndices[_a] + _b](a, b, contacts);
 }
 
+void CollisionTests::SetAABBTestEpsilon(gFloat e) { AABBTestEpsilon = e; }
 bool CollisionTests::AABBTest(AABB a, AABB b)
 {
 	if(a.maximum.x < b.minimum.x - AABBTestEpsilon) return false;
@@ -46,7 +40,99 @@ bool CollisionTests::AABBTest(AABB a, AABB b)
 	return true;
 }
 
-void CollisionTests::SetAABBTestEpsilon(gFloat e) { AABBTestEpsilon = e; }
+// Test if a Ray intersects with a Sphere
+// If intersection, set 't' to distance along ray to intersection point and return True
+// If no intersection, return False
+bool CollisionTests::RaySphereTest(Ray ray, Vector cen, gFloat r, gFloat& t)
+{
+	// Ray: P + tV					(origin P, direction unit vector V, scalar t)
+	// Circle: (X-C)(X-C) = r^2		(center C, radius r, any point on sphere X)
+	// Assuming a Ray's direction vector is normalized, a point 't' distance along the ray intersects with the sphere according to the quadratic 
+	//		t^2 + 2[(P-C).V]t + (P-C)(P-C)-r^2 = 0
+	Vector diff = ray.origin - cen;
+	gFloat b = diff.DotProduct(ray.dir);
+	gFloat c = diff.DotProduct(diff) - r * r;
+
+	// Exit if Ray's origin is outside sphere (c > 0)
+	// and Ray is pointing away from sphere (b > 0)
+	if(c > gFloat(0.0f) && b > gFloat(0.0f))
+		return false;
+	
+	// Quadratic formula discriminant
+	gFloat discr = b*b - c;
+
+	// Negative discriminant means Ray misses Sphere
+	if(discr < gFloat(0.0f))
+		return false;
+
+	// Solve for 't' (pick the smallest 't' or intersection closest to Ray origin)
+	// (We probably don't care about the farther intersection)
+	//		t = -[(P-C).V] +/- Sqrt( [(P-C).V]^2 - [(P-C)(P-C)-r^2] )
+	t = -b - Sqrt(discr);
+
+	// If 't' is negative, Ray started inside Sphere, clamp to 0
+	if(t < gFloat(0.0f))
+		t = 0.0f;
+	return true;
+}
+
+// Test if a Ray intersects an AABB by computing the intersection intervals of the Ray with planes of
+// the slabs that define the AABB (slabs being the space between 2 parallel planes)
+// Track the farthest entry into and nearest exit out of the slabs
+// If the farthest entry is ever farther than the nearest exit, there is no intersection
+// If there is an intersection, set 't' to the distance along the Ray to the intersection point and return True
+// If no intersection, return false
+// Source: 'Real Time Collision Detection' by Christer Ericson, p-180-181
+bool CollisionTests::RayAABBTest(Ray ray, AABB b, gFloat& t)
+{
+	t = 0.0f;
+	gFloat tMax = ray.len;
+	for(unsigned int i = 0; i < 3; ++i)
+	{
+		// Ray is parallel to slab, no hit if origin not in slab
+		if(Abs(ray.dir[i]) < EPSILON)
+		{
+			if(ray.origin[i] < b.minimum[i] || ray.origin[i] > b.maximum[i])
+				return false;
+		}
+
+		gFloat denom = gFloat(1.0f) / ray.dir[i];
+		gFloat t1 = (b.minimum[i] - ray.origin[i]) * denom;
+		gFloat t2 = (b.maximum[i] - ray.origin[i]) * denom;
+
+		// T1 always intersection with near plane, t2 with far plane
+		// Swap if necessary
+		if(t1 > t2)
+			Swap<gFloat>(t1, t2);
+
+		// Compute intersection of slab intersection intervals
+		t = Max(t,t1);
+		tMax = Min(tMax, t2);
+
+		// No collision if slab intersection becomes empty
+		if(t > tMax)
+			return false;
+	}
+
+	// Ray intersects all 3 slabs of AABB
+	return true;
+}
+
+// Test if a Ray intersects a Plane.
+// If intersection, set 't' to distance along ray to intersection point and return True
+// If no intersection, return False
+bool CollisionTests::RayPlaneTest(Ray ray, Plane p, gFloat t, Vector& v)
+{
+	gFloat dot = p.normal.DotProduct(ray.dir);
+	if(dot < EPSILON)
+		return false;
+
+	t = (p.d - (p.normal.DotProduct(ray.origin))) / dot;
+	if(t >= gFloat(0.0f) && ray.len > gFloat(0.0f) && t < ray.len)
+		return true;
+
+	return false;
+}
 
 // NORMAL IS RELATIVE TO _A
 // CONTACT POINT SHOULD BE ON SURFACE OF _A
@@ -59,13 +145,14 @@ int CollisionTests::SphereSphereTest(Collider* _a, Collider* _b, Contact* contac
 	// Collision true if distance between Sphere centers is less-than sum of their radii 
 	// (Squared Distance between Sphere Centers is less-than square of sum of their radii)
 	Vector diff = s2->position - s1->position;
-	if(diff.SquaredMagnitude() < (s1->radius + s2->radius) * (s1->radius + s2->radius))
+	gFloat rad = s1->radius + s2->radius;
+	if(diff.SquaredMagnitude() < rad * rad)
 	{
 		gFloat len = diff.Magnitude();
 		Vector normal = diff / len;
 		contacts->SetNewContact(s1->attachedBody, s2->attachedBody, GetCoeffOfRestitution(_a,_b), 
 								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), 
-								normal, s1->position + normal*s1->radius, len - (s1->radius + s2->radius));
+								normal, s1->position + normal*s1->radius, len - rad);
 		return 1;
 	}
 
@@ -87,8 +174,30 @@ int CollisionTests::SphereBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 		gFloat len = diff.Magnitude();
 		Vector normal = diff / len;
 		contacts->SetNewContact(s->attachedBody, b->attachedBody, GetCoeffOfRestitution(_a,_b), 
-								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), normal,
-								s->position + normal*s->radius, len - s->radius);
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b),
+								normal,	s->position + normal*s->radius, len - s->radius);
+		return 1;
+	}
+	return 0;
+}
+int CollisionTests::SphereCapsuleTest(Collider* _a, Collider* _b, Contact* contacts)
+{
+	SphereCollider* s = static_cast<SphereCollider*>(_a);
+	CapsuleCollider* c = static_cast<CapsuleCollider*>(_b);
+
+	// Calc distance between Sphere center and Line Segment between center points of Capsule's endcaps
+	gFloat dist, rad = s->radius + c->radius;
+	Vector d = ClosestPointonLineSegment(s->position, c->p, c->q, dist);
+
+	// Collision is true if said distance is less than sum of Sphere+Capsule's radii
+	if(dist * dist < rad * rad)
+	{
+		Vector normal = d - s->position;
+		gFloat len = normal.Magnitude();
+		normal /= len;
+		contacts->SetNewContact(_a->attachedBody, _b->attachedBody, GetCoeffOfRestitution(_a, _b),
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b),
+								normal, s->position + normal*s->radius, len - rad);
 		return 1;
 	}
 	return 0;
@@ -100,14 +209,26 @@ int CollisionTests::SphereCylinderTest(Collider* _a, Collider* _b, Contact* cont
 
 	// Source: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.49.9172&rep=rep1&type=pdf - Page 9/10
 	// Sphere center projected along Cylinder axis
-	gFloat dist = (s->position - c->p).DotProduct(c->axis); //Δ
+	gFloat dist = (s->position - c->p).DotProduct(c->axis); //
 	Vector b = c->p + c->axis * dist;
 
 	// Sphere lies between planes defined by ends of Cylinder
 	// Collision true if distance between Sphere center and middle of Cylinder is
 	// less-than the sum of their radii
-	if(dist < c->height)
-		return (s->position-b).SquaredMagnitude() < (s->radius+c->radius)*(s->radius*c->radius);
+	if(dist >= 0 && dist <= c->height)
+	{
+		Vector diff = b - s->position;
+		gFloat rad = s->radius + c->radius;
+		if(diff.SquaredMagnitude() < rad * rad)
+		{
+			gFloat len = diff.Magnitude();
+			Vector norm = diff / len;
+			contacts->SetNewContact(s->attachedBody, c->attachedBody, GetCoeffOfRestitution(_a, _b),
+									GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), 
+									norm, s->position + norm*s->radius, len - rad);
+			return 1;
+		}
+	}
 
 	// Distance along Cylinder axis of Sphere center from Cylinder
 	gFloat d = dist > 0 ? dist - c->height : -dist;
@@ -116,12 +237,22 @@ int CollisionTests::SphereCylinderTest(Collider* _a, Collider* _b, Contact* cont
 	if(d >= s->radius) return 0;
 
 	// Distance of....uh....look at the source
-	// Distance from (closest point on Sphere to Cylinder Surface) and Sphere center
+	// Distance from closest point on Sphere to Cylinder Surface and Sphere center
 	gFloat p = Sqrt(s->radius*s->radius - d*d);
 
 	// Collision true if distance between Sphere center and Cylinder axis
 	// is less-than sum of Cylinder radius and distance from Cylinder surfance to closest point on Sphere
-	return (s->position-b).SquaredMagnitude() < (c->radius + p) * (c->radius + p);
+	Vector diff = b - s->position;
+	gFloat rad = c->radius + p;
+	if(diff.SquaredMagnitude() < rad * rad)
+	{
+		gFloat len = diff.Magnitude();
+		Vector norm = diff / len;
+		contacts->SetNewContact(s->attachedBody, c->attachedBody, GetCoeffOfRestitution(_a, _b),
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), 
+								norm, s->position + norm*s->radius, len - rad);
+		return 1;
+	}
 }
 int CollisionTests::SphereConeTest(Collider* _a, Collider* _b, Contact* contacts)
 {
@@ -136,10 +267,10 @@ int CollisionTests::SphereConeTest(Collider* _a, Collider* _b, Contact* contacts
 	Vector v = s->position - c->tip;
 
 	// Signed Distance of Sphere center along Cone axis
-	gFloat a = v.DotProduct((c->position - c->tip).Normalized());
+	gFloat a = v.DotProduct(c->axis);
 
 	// Sphere totally behind Cone tip
-	if(a < 0 && Abs(a) < c->radius)
+	if(a < 0 && -a > c->radius)
 		return 0;
 	// Sphere totally passed Cone base
 	else if(a > 0 && a - c->radius > c->height)
@@ -155,19 +286,22 @@ int CollisionTests::SphereConeTest(Collider* _a, Collider* _b, Contact* contacts
 	gFloat distCenterToSurface = distCenterToAxis - radAtA;
 
 	// Shortest distance from Sphere enter to Cone surface
-	gFloat e = distCenterToSurface * Cos(c->theta);
+	gFloat cTheta = Cos(c->theta);
+	gFloat e = distCenterToSurface * cTheta;
 	
 	// Collision true if shortest distance from Sphere center to Cone surface
 	// is less than Sphere radius
-	return e < s->radius;
-}
-int CollisionTests::SphereCapsuleTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	SphereCollider* s = static_cast<SphereCollider*>(_a);
-	CapsuleCollider* c = static_cast<CapsuleCollider*>(_b);
-
-	gFloat dist = SquaredDistanceOfPointFromLineSegment(s->position, c->p, c->q);
-	return dist < (s->radius + c->radius) * (s->radius + c->radius);
+	if(e < s->radius)
+	{
+		// Updated image to show this part: http://i.imgur.com/K6w9iSg.png
+		Vector p = c->axis * (a + e*Sin(c->theta)) / (cTheta*cTheta);
+		Vector normal = (p - s->position).Normalized();
+		contacts->SetNewContact(s->attachedBody, c->attachedBody, GetCoeffOfRestitution(_a, _b),
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b),
+								normal, normal*s->radius, e - s->radius);
+		return 1;
+	}
+	return 0;
 }
 int CollisionTests::SpherePlaneTest(Collider* _a, Collider* _b, Contact* contacts)
 {
@@ -179,13 +313,14 @@ int CollisionTests::SpherePlaneTest(Collider* _a, Collider* _b, Contact* contact
 	gFloat dist = s->position.DotProduct(p->normal) - p->d;
 
 	// Collision true if distance from Sphere center to plane is less than Sphere's radius
-	return Abs(dist) < s->radius;
-}
-int CollisionTests::SphereMeshTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	SphereCollider* s = static_cast<SphereCollider*>(_a);
-	MeshCollider* m = static_cast<MeshCollider*>(_b);
-
+	if(Abs(dist) < s->radius)
+	{
+		Vector normal = dist > 0 ? p->normal : -p->normal;
+		contacts->SetNewContact(_a->attachedBody, _b->attachedBody, GetCoeffOfRestitution(_a, _b),
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b),
+								normal, s->position + normal*s->radius, Abs(dist) - s->radius);
+		return 1;
+	}
 	return 0;
 }
 #pragma endregion
@@ -578,6 +713,13 @@ int CollisionTests::BoxBoxTest(Collider* _a, Collider* _b, Contact* contacts)
 	//return cnumUsed;
    	return 1;
 }
+int CollisionTests::BoxCapsuleTest(Collider* _a, Collider* _b, Contact* contacts)
+{
+	BoxCollider* b = static_cast<BoxCollider*>(_a);
+	CapsuleCollider* c = static_cast<CapsuleCollider*>(_b);
+
+	return 0;
+}
 int CollisionTests::BoxCylinderTest(Collider* _a, Collider* _b, Contact* contacts)
 {
 	BoxCollider* b = static_cast<BoxCollider*>(_a);
@@ -589,13 +731,6 @@ int CollisionTests::BoxConeTest(Collider* _a, Collider* _b, Contact* contacts)
 {
 	BoxCollider* b = static_cast<BoxCollider*>(_a);
 	ConeCollider* c = static_cast<ConeCollider*>(_b);
-
-	return 0;
-}
-int CollisionTests::BoxCapsuleTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	BoxCollider* b = static_cast<BoxCollider*>(_a);
-	CapsuleCollider* c = static_cast<CapsuleCollider*>(_b);
 
 	return 0;
 }
@@ -614,16 +749,66 @@ int CollisionTests::BoxPlaneTest(Collider* _a, Collider* _b, Contact* contacts)
 	gFloat d = b->position.DotProduct(p->normal) - p->d;
 
 	// Collision true if distance from Box to plane is less-than Box 'radius'
-	return Abs(d) < r;
+	if(Abs(d) < r)
+	{
+		Vector normal = d > 0 ? p->normal : -p->normal;
+		contacts->SetNewContact(_a->attachedBody, _b->attachedBody, GetCoeffOfRestitution(_a, _b),
+								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b),
+								normal, b->position + normal*r, d - r);
+		return 1;
+	}
+	return 0;
 }
-int CollisionTests::BoxMeshTest(Collider* _a, Collider* _b, Contact* contacts)
+#pragma endregion
+
+
+#pragma region Capsule Collision
+int CollisionTests::CapsuleCapsuleTest(Collider* _a, Collider* _b, Contact* contacts)
 {
-	BoxCollider* b = static_cast<BoxCollider*>(_a);
-	MeshCollider* m = static_cast<MeshCollider*>(_b);
+	CapsuleCollider* c1 = static_cast<CapsuleCollider*>(_a);
+	CapsuleCollider* c2 = static_cast<CapsuleCollider*>(_b);
+
+	// Get (squared) distances between each Capsule endpoint and the other cylidner's rotation axis
+	gFloat d1 = SquaredDistanceOfPointFromLineSegment(c1->p, c2->p, c2->q),
+			d2 = SquaredDistanceOfPointFromLineSegment(c1->q, c2->p, c2->q),
+			d3 = SquaredDistanceOfPointFromLineSegment(c2->p, c1->p, c1->q),
+			d4 = SquaredDistanceOfPointFromLineSegment(c2->q, c1->p, c2->q);
+	
+	// Collision true if shortest distance between Capsules is less than the sum of their radii
+	gFloat min = Min<gFloat>(Min<gFloat>(Min<gFloat>(d1, d2), d3), d4);
+	return min < (c1->radius+c2->radius) * (c1->radius+c2->radius);
+}
+int CollisionTests::CapsuleCylinderTest(Collider* _a, Collider* _b, Contact* contacts)
+{
+	CapsuleCollider* c1 = static_cast<CapsuleCollider*>(_a);
+	CylinderCollider* c2 = static_cast<CylinderCollider*>(_b);
+
+	return 0;
+}
+int CollisionTests::CapsuleConeTest(Collider* _a, Collider* _b, Contact* contacts)
+{
+	CapsuleCollider* c1 = static_cast<CapsuleCollider*>(_a);
+	ConeCollider* c2 = static_cast<ConeCollider*>(_b);
+
+	return 0;
+}
+int CollisionTests::CapsulePlaneTest(Collider* _a, Collider* _b, Contact* contacts)
+{
+	CapsuleCollider* c = static_cast<CapsuleCollider*>(_a);
+	PlaneCollider* p = static_cast<PlaneCollider*>(_b);
+
+	// Compute distance of center of each of Capsule's half-Sphere caps from plane
+	gFloat dist1 = c->p.DotProduct(p->normal) - p->d;
+	gFloat dist2 = c->q.DotProduct(p->normal) - p->d;
+
+	// Collision true if distance from center of half-Sphere caps is less than their radii
+	if(Abs(dist1) < c->radius) return true;
+	if(Abs(dist2) < c->radius) return true;
 
 	return 0;
 }
 #pragma endregion
+
 
 #pragma region Cylinder Collisions
 int CollisionTests::CylinderCylinderTest(Collider* _a, Collider* _b, Contact* contacts)
@@ -640,24 +825,10 @@ int CollisionTests::CylinderConeTest(Collider* _a, Collider* _b, Contact* contac
 
 	return 0;
 }
-int CollisionTests::CylinderCapsuleTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	CylinderCollider* c1 = static_cast<CylinderCollider*>(_a);
-	CapsuleCollider* c2 = static_cast<CapsuleCollider*>(_b);
-
-	return 0;
-}
 int CollisionTests::CylinderPlaneTest(Collider* _a, Collider* _b, Contact* contacts)
 {
 	CylinderCollider* c = static_cast<CylinderCollider*>(_a);
 	PlaneCollider* p = static_cast<PlaneCollider*>(_b);
-
-	return 0;
-}
-int CollisionTests::CylinderMeshTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	CylinderCollider* c = static_cast<CylinderCollider*>(_a);
-	MeshCollider* m = static_cast<MeshCollider*>(_b);
 
 	return 0;
 }
@@ -668,13 +839,6 @@ int CollisionTests::ConeConeTest(Collider* _a, Collider* _b, Contact* contacts)
 {
 	ConeCollider* c1 = static_cast<ConeCollider*>(_a);
 	ConeCollider* c2 = static_cast<ConeCollider*>(_b);
-
-	return 0;
-}
-int CollisionTests::ConeCapsuleTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	ConeCollider* c1 = static_cast<ConeCollider*>(_a);
-	CapsuleCollider* c2 = static_cast<CapsuleCollider*>(_b);
 
 	return 0;
 }
@@ -694,53 +858,6 @@ int CollisionTests::ConePlaneTest(Collider* _a, Collider* _b, Contact* contacts)
 
 	// Collision is true if signed distance from Q to plane is negative (Q is in the negative halfspace of Plane)
 	return q.DotProduct(p->normal) - p->d < 0;
-}
-int CollisionTests::ConeMeshTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	ConeCollider* c = static_cast<ConeCollider*>(_a);
-	MeshCollider* m = static_cast<MeshCollider*>(_b);
-
-	return 0;
-}
-#pragma endregion
-
-#pragma region Capsule Collision
-int CollisionTests::CapsuleCapsuleTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	CapsuleCollider* c1 = static_cast<CapsuleCollider*>(_a);
-	CapsuleCollider* c2 = static_cast<CapsuleCollider*>(_b);
-
-	// Get (squared) distances between each Capsule endpoint and the other cylidner's rotation axis
-	gFloat d1 = SquaredDistanceOfPointFromLineSegment(c1->p, c2->p, c2->q),
-			d2 = SquaredDistanceOfPointFromLineSegment(c1->q, c2->p, c2->q),
-			d3 = SquaredDistanceOfPointFromLineSegment(c2->p, c1->p, c1->q),
-			d4 = SquaredDistanceOfPointFromLineSegment(c2->q, c1->p, c2->q);
-	
-	// Collision true if shortest distance between Capsules is less than the sum of their radii
-	gFloat min = Min<gFloat>(Min<gFloat>(Min<gFloat>(d1, d2), d3), d4);
-	return min < (c1->radius+c2->radius) * (c1->radius+c2->radius);
-}
-int CollisionTests::CapsulePlaneTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	CapsuleCollider* c = static_cast<CapsuleCollider*>(_a);
-	PlaneCollider* p = static_cast<PlaneCollider*>(_b);
-
-	// Compute distance of center of each of Capsule's half-Sphere caps from plane
-	gFloat dist1 = c->p.DotProduct(p->normal) - p->d;
-	gFloat dist2 = c->q.DotProduct(p->normal) - p->d;
-
-	// Collision true if distance from center of half-Sphere caps is less than their radii
-	if(Abs(dist1) < c->radius) return true;
-	if(Abs(dist2) < c->radius) return true;
-
-	return 0;
-}
-int CollisionTests::CapsuleMeshTest(Collider* _a, Collider* _b, Contact* contacts)
-{
-	CapsuleCollider* c = static_cast<CapsuleCollider*>(_a);
-	MeshCollider* m = static_cast<MeshCollider*>(_b);
-
-	return 0;
 }
 #pragma endregion
 
@@ -762,12 +879,419 @@ int CollisionTests::PlaneMeshTest(Collider* _a, Collider* _b, Contact* contacts)
 }
 #pragma endregion
 
-int CollisionTests::MeshMeshTest(Collider* _a, Collider* _b, Contact* contacts)
+int CollisionTests::GJKTest(Collider* _a, Collider* _b, Contact* contacts)
 {
-	MeshCollider* m1 = static_cast<MeshCollider*>(_a);
-	MeshCollider* m2 = static_cast<MeshCollider*>(_b);
+	// Array of 4 vertices representing a k-Simplex as k goes from 0 to 3
+	// Always arranged so the largest index is the newest vertex 'a' and the smallest index is the oldest vertex ('b', 'c', or 'd')
+	SupportPoint simplex[4];
+	Vector d = (_b->position - _a->position).Normalized();	// starting search direction
+	SupportPoint supp;
+	unsigned int simplexIndex = 0;
 
+	// Add 1st point on Minkowski Difference to Simplex
+	simplex[simplexIndex++].Set(_a, _b, d);
+	d.Negate();
+
+	while(true)
+	{
+		// Add new point to Simplex
+		supp.Set(_a, _b, d);
+
+		// If last point in Simplex does not pass origin in direction 'd,' then the
+		// Minkowski Difference cannot possibly contain the origin, therefore no collision.
+		if(supp.p.DotProduct(d) <= gFloat(0.0f))
+			return 0;
+
+		// Add new point to Simplex
+		simplex[simplexIndex++] = supp;
+
+		if(GJKDoSimplex(simplex, simplexIndex, d))
+		{
+			// Tetrahedral Simplex contains origin, collision confirmed
+			// Run Expanding Polytope Algorithm (EPA) to get collision details
+			return EPA(_a, _b, simplex, contacts);
+		}
+		// No collision found yet, keep going
+	}
 	return 0;
+}
+// https://mollyrocket.com/849
+bool CollisionTests::GJKDoSimplex(SupportPoint simplex[4], unsigned int& simplexIndex, Vector& d)
+{
+	switch(simplexIndex)
+	{
+		case 2:		// 1-Simplex - Line Segment
+		{
+			Vector ab = simplex[0] - simplex[1], ao = simplex[1].p.Negated();
+
+			// AB points in direction towards origin, search for next point
+			// in direction towards origin & perpendicular to AB
+			if(ab.DotProduct(ao) > 0)
+				d  = (ab.CrossProduct(ao)).CrossProduct(ab);
+			else	// AB not in direction towards origin, throwout B
+			{		// search directly toward origin now
+				simplex[0] = simplex[1];
+				simplexIndex = 1;
+				d = ao;
+			}
+			return false;
+		}
+		case 3:		// 2-Simplex - Triangle
+		{	// Test which Voronoi region of the triangle with origin is in
+			// If not in region inside triangle, throwout the remaining point(s) and
+			// restart the Simplex with the corresponding point(s) and a new search direction
+			Vector ab = simplex[1] - simplex[2], ac = simplex[0] - simplex[2], ao = simplex[2].p.Negated();
+			Vector abc = ab.CrossProduct(ac); // triangle normal
+
+			if(abc.CrossProduct(ac).DotProduct(ao) > 0)	// Test if in region outside segment AC
+			{
+				if(ac.DotProduct(ao) > 0)	// Test if AC points toward origin at all
+				{
+					// It does, throw out point 'B', restart Simpelex with segment AC and
+					// new search direction perpendicular to AC away from triangle
+					simplex[1] = simplex[2];
+					simplexIndex = 2;
+					d = (ac.CrossProduct(ao)).CrossProduct(ac);
+				}
+				// AC doesn't point toward origin
+				else if(ab.DotProduct(ao) > 0)	// Test if AB does instead
+				{
+					// It does, throw out point 'C', restart Simplex with segment AB and
+					// new search direction perpendicular to AB away from triangle
+					simplex[0] = simplex[1];
+					simplex[1] = simplex[2];
+					simplexIndex = 2;
+					d = (ab.CrossProduct(ao)).CrossProduct(ab);
+				}
+				else	// AB doesn't point toward origin either, restart Simplex with just A
+				{
+					simplex[0] = simplex[2];
+					simplexIndex = 1;
+					d = ao;
+				}
+			}
+			else	// Origin in region inside segment AC
+			{
+				if(ab.CrossProduct(abc).DotProduct(ao) > 0)		// Test if in region outside sement AB
+				{
+					if(ab.DotProduct(ao) > 0)	// Test of AB points toward origin at all
+					{
+						// It does,, throwout point 'C', restart Simplex with segment AB and
+						// new search direction perpendicular to AB away from triangle
+						simplex[0] = simplex[1];
+						simplex[1] = simplex[2];
+						simplexIndex = 2;
+						d = (ab.CrossProduct(ao)).CrossProduct(ab);
+					}
+					else	// AB doesn't point toward origin, restart Simplex with just A
+					{
+						simplex[0] = simplex[2];
+						simplexIndex = 1;
+						d = ao;
+					}
+				}
+				else	// Origin not outside segment AB, so its inside both AC and AB
+				{
+					// We can build a tetrahedron with a 4th point now
+					if(abc.DotProduct(ao) > 0)	// Search "above" triangle
+						d = abc;
+					else						// Or "below" triangle
+					{
+						// Requires reorder of points so they are still clockwise
+						SupportPoint temp = simplex[0];
+						simplex[0] = simplex[1];
+						simplex[1] = temp;
+						d = -abc;
+					}
+				}
+			}
+			
+			return false;
+		}
+		case 4:	// 3-Simplex - Tetrahedron	
+		{
+			Vector ab = simplex[2]-simplex[3], ac = simplex[1]-simplex[3], ad = simplex[0]-simplex[3], ao = simplex[3].p.Negated();
+			Vector abcN = ab.CrossProduct(ac);
+			Vector acdN = ac.CrossProduct(ad);
+			Vector adbN = ad.CrossProduct(ab);
+
+			// Tests for each new plane of Tetrahedron (plane BCD doesn't need to be tested)
+			int planeTests = 
+#ifdef LEFT_HANDED_COORDS
+					abcN.DotProduct(ao) > 0 ? 0x1 : 0 | acdN.DotProduct(ao) > 0 ? 0x2 : 0 | adbN.DotProduct(ao) > 0 ? 0x4 : 0;
+#else
+					ao.DotProduct(abcN) > 0 ? 0x1 : 0 | ao.DotProduct(acdN) > 0 ? 0x2 : 0 | ao.DotProduct(adbN) > 0 ? 0x4 : 0;
+#endif
+			bool skip = false;
+			switch(planeTests)
+			{
+				case 0:					// Origin inside all planes that compose Tetrahedron, we have proven collision
+					return true;
+				case 0x1:				// Origin only outside ABC
+					// re-arrage Simplex so ABC is 1st 3 points (already done)
+					skip = true;
+				case 0x2:				// Origin only outside ACD
+					if(!skip)
+					{
+						// re-arrange Simplex so ACD is 1st 3 points
+						simplex[2] = simplex[1];
+						simplex[1] = simplex[0];
+
+						// re-arrange Simplex edges accordingly
+						ab = ac;
+						ac = ad;
+						abcN = acdN;	// set face normal to 'abc' too
+						skip = true;
+					}
+				case 0x4:				// Origin only outisde ADB
+					if(!skip)
+					{
+						// re-arrange Simplex so ADB is 1st 3 points
+						simplex[1] = simplex[2];
+						simplex[2] = simplex[0];
+
+						// re-arrange Simplex edges accordingly
+						ac = ab;
+						ab = ad;
+						abcN = adbN;	// set face normal to 'abcN' too
+					}
+
+					// Simplex and data now rearranged so nearest face to origin is 3 most recent points
+					// in Simplex, the edges are saved to 'ab' and 'ac' and the normal is saved to 'abc'
+					// Test which feature (2 edges or face) is nearest to the origin
+					if(abcN.CrossProduct(ac).DotProduct(ao) > 0)		// Is segment 'ac' closest feature?
+					{
+						// 'ac' is nearest feature, reset Simplex to segment 'ac'
+						simplex[0] = simplex[1];
+						simplex[1] = simplex[4];
+						d = ac.CrossProduct(ao);
+						simplexIndex = 2;
+						return false;
+					}
+					else if(ab.CrossProduct(abcN).DotProduct(ao) > 0) // Is segment 'ab' closest feature?
+					{
+						// 'ab' is nearest feature, reset Simplex to segment 'ab'
+						simplex[0] = simplex[2];
+						simplex[1] = simplex[3];
+						d = ab.CrossProduct(ao);
+						simplexIndex = 2;
+						return false;
+					}
+
+					// Face is closest feature, reset Simplex to plane 'abc'
+					simplex[0] = simplex[1];
+					simplex[1] = simplex[2];
+					simplex[2] = simplex[3];
+					d = abcN;
+					simplexIndex = 3;
+					return false;
+				case 0x1 | 0x2:			// Origin only inside 1 plane, outside ABC and ACD
+					skip = true;
+				case 0x1 | 0x4:			// Origin only inside 1 plane, outside ADB and ABC
+					if(!skip)
+					{
+						// Re-arrange simplex... 
+						SupportPoint temp = simplex[1];
+						simplex[1] = simplex[2];
+						simplex[2] = simplex[0];
+						simplex[0] = temp;
+
+						// and edges...
+						Vector temp2 = ac;
+						ac = ab;
+						ab = ad;
+						ad = temp2;
+
+						// and face normals.
+						acdN = abcN;
+						abcN = adbN;
+					}
+				case 0x2 | 0x4:			// Origin only inside 1 plane, outside ACD and ADB
+					if(!skip)
+					{
+						// Re-arrange simplex...
+						SupportPoint temp = simplex[2];
+						simplex[2] = simplex[1];
+						simplex[1] = simplex[0];
+						simplex[0] = temp;
+
+						// and edges...
+						Vector temp2 = ab;
+						ab = ac;
+						ac = ad;
+						ad = temp2;
+
+						// and face normals.
+						abcN = acdN;
+						acdN = adbN;
+					}
+					// Simplex is now arranged so that the 2 faces the origin lies outside of are in 'abc' and 'acd'
+					// the edge shared by both faces is 'ac,' and the normals are 'abcN' and 'acdN'
+
+					// Origin is outside 2 faces of Tetrahedron. 
+					// Test if segment 'ac' (the segment between faces ABC and ACD) is closer than face ABC
+					if(abcN.CrossProduct(ac).DotProduct(ao) > 0)
+					{
+						// Yes. Segment 'ac' is closer, so we now have to check face ACD.
+						// Re-arrage Simplex so ACD is 1st 3 points
+						simplex[2] = simplex[1];
+						simplex[1] = simplex[0];
+
+						// re-arrange edges accordingly
+						ab = ac;
+						ac = ad;
+						abcN = acdN;	// set face normal to 'abc' too
+						skip = false;	// test segment 'ac' then 'ab' if necessary
+					}
+					else // Face 'abc' is closer to origin than segment 'ac.' Segment 'ac' was already tested, skip to 'ab' test.
+						skip = true;	// skip testing 'ac', only test 'ab'
+
+					// Ok, at this stage, the origin is outside face 'abc'
+					// Test edges 'ac' and 'ab.' If neither of them is the closest feature, then face 'abc' is
+					if(!skip && abcN.CrossProduct(ac).DotProduct(ao) > 0)		// Is segment 'ac' closest feature?
+					{
+						// 'ac' is nearest feature, reset Simplex to segment 'ac'
+						simplex[0] = simplex[1];
+						simplex[1] = simplex[4];
+						d = ac.CrossProduct(ao);
+						simplexIndex = 2;
+						return false;
+					}
+					else if(ab.CrossProduct(abcN).DotProduct(ao) > 0) // Is segment 'ab' closest feature?
+					{
+						// 'ab' is nearest feature, reset Simplex to segment 'ab'
+						simplex[0] = simplex[2];
+						simplex[1] = simplex[3];
+						d = ab.CrossProduct(ao);
+						simplexIndex = 2;
+						return false;
+					}
+
+					// Face is closest feature, reset Simplex to plane 'abc'
+					simplex[0] = simplex[1];
+					simplex[1] = simplex[2];
+					simplex[2] = simplex[3];
+					d = abcN;
+					simplexIndex = 3;
+					return false;
+
+				default:				// Origin not inside any face.....oops
+					AssertMsg(false, "Now you fucked up...");
+					return false;
+			}
+		}
+		default: { return false; }
+	}
+}
+
+void CollisionTests::SetEPADistanceThreshold(gFloat dist) { EPADistanceThreshold = dist; }
+int CollisionTests::EPA(Collider* _a, Collider* _b, SupportPoint simplex[4], Contact* contacts)
+{
+	std::list<Triangle> triangles;
+	std::list<Edge> edges;
+	std::list<Triangle>::iterator face;
+	std::list<Edge>::iterator eIter;
+	SupportPoint newPoint;
+	Edge e;
+	gFloat dist = G_MAX, prevDist = 0;
+
+	triangles.push_back(Triangle(simplex[3], simplex[2], simplex[1]));
+	triangles.push_back(Triangle(simplex[3], simplex[1], simplex[0]));
+	triangles.push_back(Triangle(simplex[3], simplex[0], simplex[2]));
+	triangles.push_back(Triangle(simplex[2], simplex[0], simplex[1]));
+
+	while(true)
+	{
+		// Pick closest 'face' (triangle) to origin
+		gFloat d;
+		for(auto iter = triangles.begin(); iter != triangles.end(); ++iter)
+		{
+			d = (*iter).normal.DotProduct((*iter).a.p);
+			if(d < dist)
+			{
+				dist = d;
+				face = iter;
+			}
+		}
+
+		// Check if the face we chose is sufficiently close to the border of the Minkowski Difference
+		// If so, end now, we have the info we're looking for
+		if(dist - prevDist <= EPADistanceThreshold)
+			break;
+
+		// Get new support point from chosen face's normal
+		newPoint.Set(_a, _b, (*face).normal);
+
+		// New support point isn't any further away, it's on the nearest face
+		// Nearest face must be on edge of Minkowski Difference
+		if(face->normal.DotProduct(newPoint.p) == dist)
+			break;
+
+		// Get list of faces "seen" by new support point
+		// Face is "seen" if new support point is in positive halfspace of plane containing face
+		// (erase_if and fancy lambda to move all "seen" faces to end of triangles vector
+		auto iter = std::remove_if(triangles.begin(), triangles.end(), 
+				[&](Triangle t) { return t.normal.DotProduct(newPoint.p - t.a.p) > 0; });
+
+		// Add edges of each "seen" face to edges list
+		// If opposite edge already in list, don't add and remove opposite edge
+		// Fancy lambda again to handle testing/adding edges
+		auto addEdgeLambda = [&](const SupportPoint& a, SupportPoint& b){
+						for(auto iter = edges.begin(); iter != edges.end(); ++iter)	{
+							if(iter->a == b && iter->b == a) {
+								edges.erase(iter);
+								return;
+							}
+						}
+						edges.emplace_back(a,b);
+		};
+		for(auto i = iter; i != triangles.end(); ++i)
+		{
+			addEdgeLambda(i->a, i->b);
+			addEdgeLambda(i->b, i->c);
+			addEdgeLambda(i->c, i->a);
+		}
+
+		// Remove "seen" faces from list
+		triangles.erase(iter, triangles.end());
+
+		// Remove chosen face from polytope
+//		triangles.erase(face);
+
+		// Add new faces to cover the "hole" made from the removed faces
+		for(auto iter = edges.begin(); iter != edges.end(); ++iter)
+		{
+			Triangle t(newPoint, iter->a, iter->b);
+			triangles.push_back(t);
+			gFloat g = t.normal.DotProduct(t.a.p);
+			g += 1;
+		}
+
+		// Clear edge list for next iteration
+		edges.clear();
+		prevDist = dist;
+		dist = G_MAX;
+	}
+
+	// Polytope fully expanded, extract collision info
+	// Get barycentric coordinates of origin projected onto nearest face
+	// Taken from "Real Time Collision Detection" by Christer Ericson, p47-48
+	Vector v0 = face->b - face->a, v1 = face->c - face->a, v2 = face->a.p.Negated();
+	gFloat d00 = v0.DotProduct(v0);
+	gFloat d01 = v0.DotProduct(v1);
+	gFloat d11 = v1.DotProduct(v1);
+	gFloat d20 = v2.DotProduct(v0);
+	gFloat d21 = v2.DotProduct(v1);
+	gFloat denom = d00 * d11 - d01 * d01;
+	gFloat v = (d11 * d20 - d01 * d21) / denom;
+	gFloat w = (d00 * d21 - d01 * d20) / denom;
+	gFloat u = gFloat(1.0f) - v - w;
+
+	contacts->SetNewContact(_a->attachedBody, _b->attachedBody, GetCoeffOfRestitution(_a, _b),
+							GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b), face->normal,
+							face->a.suppA*u + face->b.suppA*v + face->c.suppA*w,
+							dist);
+	return 1;
 }
 
 #pragma region Utility Functions
@@ -797,7 +1321,7 @@ Vector CollisionTests::ClosestPointOnOOBB(Vector p, Vector c, Vector u[3], Vecto
 gFloat CollisionTests::SquaredDistanceOfPointFromLineSegment(Vector p, Vector a, Vector b)
 {
 	// Source: 'Real Time Collision Detection' by Christer Ericson, p-129-130
-	Vector ab = b - a, ap = p - a, bp = p - b;
+	Vector ab = b - a, ap = p - a;
 
 	// Length of projection of 'p' onto 'ab'
 	gFloat e = ap.DotProduct(ab);
@@ -805,19 +1329,20 @@ gFloat CollisionTests::SquaredDistanceOfPointFromLineSegment(Vector p, Vector a,
 	// 'p' projects outside 'ab'
 	if(e < 0) return ap.DotProduct(ap);	// projects behind 'a'
 	gFloat f = ab.DotProduct(ab);
+	Vector bp = p - b;
 	if(e > f) return bp.DotProduct(bp);	// projects passed 'b'
 
 	// 'p' projects onto ab
 	return (ap.DotProduct(ap)) - (e * e / f);
 }
 
-Vector CollisionTests::ClosestPointonLineSegment(Vector p, Vector a, Vector b)
+Vector CollisionTests::ClosestPointonLineSegment(Vector p, Vector a, Vector b, gFloat& t)
 {
 	// Source: 'Real Time Collision Detection' by Christer Ericson, p-128
 	Vector ab = b - a;
 
 	// Project 'p' onto 'ab', computing parameterized position d(t) = a + t*(b-a)
-	gFloat t = (p - a).DotProduct(ab) / ab.DotProduct(ab);
+	t = (p - a).DotProduct(ab) / ab.DotProduct(ab);
 
 	// If outside segment, clamp to 'ab'
 	if(t < 0.0f) return a;

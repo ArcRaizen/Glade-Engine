@@ -9,7 +9,7 @@ bool OctreeDemo::Initialize()
 	if(!GApplication::Initialize())
 		return false;
 
-	camera->SetPerspective(45*DEG2RAD, 16.f/9.f, 1.f, 1000.f);
+	//camera->SetPerspectiveFoVY(45*DEG2RAD, 16.f/9.f, 1.f, 1000.f);
 	//camera->SetOrtho(1280/10, 720/10, -500,500);
 	camera->LookAt(Vector(10, 20, -50), Vector(10,20,50), Vector(0,1,0));
 
@@ -75,7 +75,7 @@ bool OctreeDemo::Update(float dt)
 
 void OctreeDemo::Render()
 {
-	GraphicsLocator::GetGraphics()->StartFrame(100.f/256.f,149.f/256.f,237.f/256.f,1, camera->GetView(), camera->GetProj());
+	GraphicsLocator::GetGraphics()->StartFrame((float*)camera->GetView(), (float*)camera->GetProj());
 	for(unsigned int i = 0; i < orbs.size(); ++i)
 		orbs[i]->Render();
 

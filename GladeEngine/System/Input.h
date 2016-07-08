@@ -8,9 +8,11 @@
 #include <D3DX10math.h>
 #include <map>
 #include "Arcball/Arcball.h"
+#include "../Math/Ray.h"
 #include "../Utils/Assert.h"
 
 namespace Glade {
+//#define AXIS_INPUT_SNAP
 class Input
 {
 public:
@@ -18,7 +20,7 @@ public:
 private:
 	// Struct to represent an analog input instead of a digital input
 	// For KEY_MOUSE_BUTTONS, pressing the 'positive' makes the output move towards 1
-	// and pressing the 'negative' key moves towards -1.
+	//		and pressing the 'negative' key moves towards -1.
 	// The rate of that movement is "acceleration" - the higher, the faster the movement
 	// If no buttons pressed, the value returns to 0 at rate of "deceleration" - the higher the faster the movement
 	struct InputAxis
@@ -76,7 +78,7 @@ public:
 	void	SetAxisOptionalParameters(std::string name, gFloat accel, gFloat decel, unsigned int altPKey=GK_NONE, unsigned int altNKey=GK_NONE);
 	gFloat	GetAxis(std::string name);
 
-	D3DXVECTOR3 GetMouseWorldCoords(HWND hWnd, D3DXVECTOR3 cameraPos);
+	Ray			GetMousePickRay(HWND hWnd, const Matrix& view, const Matrix& proj);
 	D3DXVECTOR2 GetMouseClientCoords(HWND hWnd);
 	D3DXVECTOR2 GetMouseUV(HWND hWnd);
 

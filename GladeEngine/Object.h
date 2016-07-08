@@ -27,7 +27,7 @@ public:
 
 	// NOTE! This Constructor should only be used by Particles
 	Object(Vector p, Vector a, gFloat iMass, gFloat lDamp, bool ug, Vector grav=Vector());
-	virtual ~Object() { }
+	virtual ~Object();
 
 	virtual bool Update() = 0;				// Do physics
 	virtual void Render() = 0;
@@ -105,14 +105,17 @@ public:
 	virtual Matrix GetInverseInertiaTensorWorld() const = 0;
 	virtual void GetInverseInertiaTensorWorld(Matrix* m) const = 0;
 
-	// Calculate and Return AABB that contains this Object
-	AABB GetBoundingBox();
+	// Return AABB that contains this Object
+	AABB GetBoundingBox() const;
+	AABB& GetBoundingBox();
 
 	// Return the radius of a Sphere wholly encapsulating this Object
-	gFloat GetRadius();
+	gFloat GetRadius() const;
 
 	// Return the radius squared of a Sphere wholly encapsulating this Object
-	gFloat GetRadiusSquared();
+	gFloat GetRadiusSquared() const;
+
+	void SetHightlightColor(D3DXVECTOR4 c = D3DXVECTOR4(1,1,1,1));
 
 	std::set<int> GetHashIndices();
 	void SetHashIndices(std::set<int> indices);
@@ -158,6 +161,7 @@ protected:
 	std::vector<int> generatorIDs;
 
 	Direct3D::ShaderResource* shaderResource;
+	D3DXVECTOR4 highlightColor;		// Color passed into shader when rendering
 
 	int		properties;
 };

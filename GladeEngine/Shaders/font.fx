@@ -8,19 +8,13 @@
 /////////////
 cbuffer CBPerObject
 {
-	float4x4 worldMatrix;
-	float4 highlightColor : COLOR;
+	float4 color : COLOR;
 };
 
 cbuffer CBPerFrame
 {
 	float4x4 viewMatrix;
 	float4x4 projectionMatrix;
-	
-	// ignore below for now...
-	float3 lightDirection;
-	float3 lightPosition;
-	float4 lightColor;
 };
 
 Texture2D shaderTexture;
@@ -41,8 +35,6 @@ SamplerState SampleType
 struct VertexInputType
 {
     float4 position : POSITION;
-	float4 normal : NORMAL;
-	float4 tangent : TANGENT;
     float2 tex : TEXCOORD0;
 };
 
@@ -65,8 +57,7 @@ PixelInputType TextureVertexShader(VertexInputType input)
     input.position.w = 1.0f;
 
 	// Calculate the position of the vertex against the world, view, and projection matrices.
-    output.position = mul(input.position, worldMatrix);
-    output.position = mul(output.position, viewMatrix);
+    output.position = mul(input.position, viewMatrix);
     output.position = mul(output.position, projectionMatrix);
     
 	// Store the texture coordinates for the pixel shader.
@@ -80,20 +71,26 @@ PixelInputType TextureVertexShader(VertexInputType input)
 ////////////////////////////////////////////////////////////////////////////////
 float4 TexturePixelShader(PixelInputType input) : SV_Target
 {
-	if(input.tex.x != -1)
+	float4 c;
+	c = shaderTexture.Sample(SampleType, input.tex);
+	if(c.r == 0.0f)
 	{
-		float4 textureColor = shaderTexture.Sample(SampleType, input.tex);
-		return textureColor * highlightColor;
+		c.a = 0.0f;
+	}
+	else
+	{
+		c.a = 1.0f;
+		c = c * color;
 	}
 	
-	return highlightColor;
+	return c;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 // Technique
 ////////////////////////////////////////////////////////////////////////////////
-technique10 TextureTechnique
+technique10 FontTechnique
 {
     pass pass0
     {

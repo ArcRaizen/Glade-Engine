@@ -15,6 +15,7 @@ public:
 	void Render();
 
 private:
+	Matrix baseView, ortho;
 	RigidBody* box, *plane;
 	RigidBody* box2, *box3;
 	PhysicMaterial* boxMaterial, *planeMaterial;

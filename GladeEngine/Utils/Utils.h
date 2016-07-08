@@ -3,7 +3,6 @@
 
 #include "../Utils/Assert.h"
 #include "../Utils/Trace.h"
-#include "../Utils/Timer.h"
 #include "../Utils/SmartPointer/WeakPointer.h"
 #include "../Utils/SmartPointer/SmartPointer.h"
 

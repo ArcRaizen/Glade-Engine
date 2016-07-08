@@ -2,15 +2,17 @@
 
 using namespace Glade;
 
-World::World(unsigned int maxContacts_, unsigned int iterations, Vector size/*=Vector(1000.0f,1.000.0f,1000.0f)*/) : 
-			contactResolver(iterations), maxContacts(maxContacts_), worldSize(size), timeAccumulator(0.0f)
+World::World(int worldMin, int worldMax, int cellSize_, unsigned int maxContacts_, unsigned int iterations) : 
+			contactResolver(iterations), maxContacts(maxContacts_), worldCoordinateMinimum(worldMin), worldCoordinateMaximum(worldMax), cellSize(cellSize_)
 {
 	contacts = new Contact[4];
 	calculateIterations = (iterations == 0);
 
-	numBuckets = 1000;
-	cellSize = 5;
-	hashTable = new std::vector<RigidBody*>*[numBuckets];
+	AssertMsg((worldMax-worldMin) % cellSize_ == 0, "World cannot be evenly divided into cells with given World size and cell dimensions");
+	worldHashWidth = (worldMax - worldMin) / cellSize;
+	numBuckets = worldHashWidth * worldHashWidth * worldHashWidth;
+	cellSizeConvFactor = gFloat(1.0f) / cellSize;
+	hashTable = new SpatialHashCell*[numBuckets];
 	for(int i = 0; i < numBuckets; ++i)
 		hashTable[i] = nullptr;
 }
@@ -45,10 +47,10 @@ unsigned int World::GenerateContacts()
 		// Loop through each hash cell it's in
 		for(auto j = indices.begin(); j != indices.end(); ++j)
 		{
-			auto bucket = hashTable[*j];	// Get list of Objects/RigidBodies in that cell
+			auto bucket = hashTable[*j]->bucket;	// Get list of Objects/RigidBodies in that cell
 
 			// Loop through each Object/RigidBody in cell, add to master list
-			for(auto k = bucket->begin(); k != bucket->end(); ++k)
+			for(auto k = bucket.begin(); k != bucket.end(); ++k)
 				bodies.insert(*k);
 		}
 
@@ -106,8 +108,8 @@ unsigned int World::GenerateContacts()
 						// Collider 'b' must be Enabled
 						if(!bColliders[b]->IsEnabled()) continue;
 
-						// Query both Colliders' Collision Masks to ensure these Colliders can collider
-						//if(!aColliders[a]->QueryCollisionMask(TEST) || !bColliders[b]->QueryCollisionMask(TEST2)) continue;
+						// Query  Colliders' Collision Mask(s) to ensure these Colliders can collide(r)
+						if(!aColliders[a]->QueryCollisionMask(bColliders[b]->GetCollisionType())) continue; 
 
 						// No pre-set reason why Colliders cannot collide - Actually test for intersection now
 						used = CollisionTests::TestCollision(aColliders[a], bColliders[b], contacts);							
@@ -204,14 +206,78 @@ void World::PhysicsUpdate(gFloat dt)
 	}
 }
 
+void World::Render(Camera* cam)
+{
+#ifdef FRUSTUM_CULLING_BOXES
+	for(unsigned int i = 0; i < numBuckets; ++i)
+	{
+		if(hashTable[i] == nullptr || hashTable[i]->bucket.size() == 0) continue;
+		if(cam->IsBoxInFrustum(hashTable[i]->boundingBox) != Camera::OUTSIDE)
+		{
+			for(unsigned int j = 0; j < hashTable[i]->bucket.size(); ++j)
+			{
+#ifdef FRUSTUM_CULLING_RIGOROUS
+				if(cam->IsBoxInFrustum(hashTable[i]->bucket[j]) != Camera::OUTSIDE)
+#endif
+				hashTable[i]->bucket[j]->Render();
+			}
+		}
+	}
+#else
+	for(unsigned int i = 0; i < rigidBodies.size()l ++i)
+	{
+		if(cam->IsSphereInFrustum(rigidBodies[i]) != Camera::OUTSIDE)
+			rigidBodies[i]->Render();
+	}
+#endif
+}
+
 #pragma region Spatial Hash
 int World::Hash(Vector v)
 {
+	if(v.x < worldCoordinateMinimum || v.x > worldCoordinateMaximum) return -1;
+	if(v.y < worldCoordinateMinimum || v.y > worldCoordinateMaximum) return -1;
+	if(v.z < worldCoordinateMinimum || v.z > worldCoordinateMaximum) return -1;
+	int x = (int)((int)(v.x-worldCoordinateMinimum) * cellSizeConvFactor);
+	int y = (int)((int)(v.y-worldCoordinateMinimum) * cellSizeConvFactor) * worldHashWidth * worldHashWidth;
+	int z = (int)((int)(v.z-worldCoordinateMinimum) * cellSizeConvFactor) * worldHashWidth;
+	return x + y + z;
+
+/*	int a = v.x / cellSize;
+	int b = v.y / cellSize;
+	int c = v.z / cellSize;
+	int test = ((a * 73856093) ^ (b * 19349663) ^ (c * 83492791)) % numBuckets;
+
+	unsigned int d = v.x / cellSize;
+	unsigned int e = v.y / cellSize;
+	unsigned int f = v.z / cellSize;
+	int test2 = ((d * 73856093) ^ (e * 19349663) ^ (f * 83492791)) % numBuckets;
+
 	unsigned __int64 x = (v.x + worldSize.x/2) / cellSize;
 	unsigned __int64 y = (v.y + worldSize.y/2) / cellSize;
 	unsigned __int64 z = (v.z + worldSize.z/2) / cellSize;
 
-	return ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) % numBuckets;
+	int test3 =  ((x * 73856093) ^ (y * 19349663) ^ (z * 83492791)) % numBuckets;
+	return test3;*/
+}
+
+// Return the AABB representing the Spatial Hash cell of the given index
+AABB World::CalcHashCellBounds(int i)
+{
+	Vector min, max;
+	min.y = i / (worldHashWidth * worldHashWidth);
+	i -= min.y * (worldHashWidth * worldHashWidth);
+	min.z = i / worldHashWidth;
+	i -=min.z * worldHashWidth;
+	min.x = i;
+	min *= cellSize;
+	min += Vector(worldCoordinateMinimum, worldCoordinateMinimum, worldCoordinateMinimum);
+
+	max.x = min.x + cellSize;
+	max.y = min.y + cellSize;
+	max.z = min.z + cellSize;
+
+	return AABB(min, max);
 }
 
 std::set<int> World::GetHashIndices(RigidBody* o)
@@ -250,8 +316,11 @@ void World::AddToHash(RigidBody* o)
 	for(auto iter = indices.begin(); iter != indices.end(); ++iter)
 	{
 		if(hashTable[*iter] == nullptr)
-			hashTable[*iter] = new std::vector<RigidBody*>;
-		hashTable[*iter]->push_back(o);
+		{
+			hashTable[*iter] = new SpatialHashCell;
+			hashTable[*iter]->boundingBox = CalcHashCellBounds(*iter);
+		}
+		hashTable[*iter]->bucket.push_back(o);
 	}
 
 	// Save the list of cells/indices in hash intersected by this Object
@@ -317,7 +386,7 @@ void World::UpdateHashedObject(RigidBody* o)
 //	o->SetHashIndices(updatedIndices);
 }
 
-std::vector<RigidBody*>* World::QueryHash(Vector v)
+SpatialHashCell* World::QueryHash(Vector v)
 {
 	return hashTable[Hash(v)];
 }
@@ -325,44 +394,266 @@ std::vector<RigidBody*>* World::QueryHash(Vector v)
 void World::RemoveFromHash(RigidBody* o)
 {
 	std::set<int> indices = o->GetHashIndices();
-	std::vector<RigidBody*>* bucket;
+	SpatialHashCell* cell;
 	std::vector<RigidBody*>::iterator i;
 	for(auto iter = indices.begin(); iter != indices.end(); ++iter)
 	{
-		bucket = hashTable[*iter];
-		i = std::find(bucket->begin(), bucket->end(), o);
-		bucket->erase(i, i+1);
+		cell = hashTable[*iter];
+		i = std::find(cell->bucket.begin(), cell->bucket.end(), o);
+		cell->bucket.erase(i, i+1);
 	}
 }
 
-bool World::RayCast(Vector start, Vector dir, int mask, gFloat len/*=G_MAX*/)
+// Return the 1st Object in the world that collides with given Ray
+// The distance along the ray is "returned" via the 't' parameter by reference
+// Source: http://www.cse.yorku.ca/~amana/research/grid.pdf, http://stackoverflow.com/questions/12367071/how-do-i-initialize-the-t-variables-in-a-fast-voxel-traversal-algorithm-for-ray
+Object* World::RayCast(Ray ray, gFloat& t, int mask)
 {
-	std::vector<RigidBody*>* bucket;
-	Vector end = start + dir*len;
-	Vector diff = end - start;
+	// Pre-define variables before using them
+	SpatialHashCell* cell;
+	std::vector<Collider*> colliders;
+	std::set<unsigned int> objectIDs;
+	unsigned int id, numC, index;
+	gFloat dist = 0;
 
-	int prevHash = -1, curHash = -2;
-	gFloat stepLength = 1.0f;
-	for(gFloat step = 0.0f; step < len; step+=stepLength)
+	// Check starting cell for Objects
+	cell = hashTable[Hash(ray.origin)];
+	if(cell != nullptr)
 	{
-		curHash = Hash(start + dir*step);
-
-		// Don't check Bucket we have already checked
-		if(prevHash == curHash) continue;
-		prevHash = curHash;
-
-		// Don't check Bucket if there is nothing in it
-	//	if(!hashIndices.count(curHash)) continue;
-
-		// Loop through each object in Bucket
-		bucket = hashTable[curHash];
-		for(auto iter = bucket->begin(); iter != bucket->end(); ++iter)
+		// Check each Object in cell for collision with ray
+		for(unsigned int i = 0; i < cell->bucket.size(); ++i)
 		{
-			// Raycast test against it
+			// Make sure we haven't checked this Object already (Objects can be in multiple cells)
+			id = cell->bucket[i]->GetID();
+			if(objectIDs.count(id) == 0)
+			{
+				objectIDs.insert(id);
+
+				// Check each Collider for each Object
+				numC = cell->bucket[i]->GetColliders(colliders);
+				for(unsigned int j = 0; j < numC; ++j)
+				{
+					// Check that the Collider is enabled and matches the collision mask of the ray
+					if(colliders[j]->IsEnabled() && colliders[j]->QueryCollisionMask(mask))
+					{
+						// Actually test collider against ray
+						if(CollisionTests::RayAABBTest(ray, colliders[j]->GetBounds(), t))
+							return cell->bucket[i];	// if collision, return the object
+					}
+				}
+			}
 		}
 	}
 
-	return false;
+	// Get parameters for moving down the ray incrementally
+	Vector start = ray.origin;
+	Vector delta = ray.GetEndPoint() - start;
+	Vector tDelta, tMax;
+	CalcRaycastParams(ray, tDelta, tMax);
+
+	// Move down ray until it enters a new cell, then check the new cell for collisions
+	do
+	{	// Choose which direction we move to reach a new cell
+		if(tMax.x < tMax.y)
+		{
+			if(tMax.x < tMax.z)
+			{
+				//dist += tMax.x;
+				tMax.x += tDelta.x;
+				dist = tMax.x;
+			}
+			else
+			{
+				//dist += tMax.z;
+				tMax.z += tDelta.z;
+				dist = tMax.z;
+			}
+		}
+		else
+		{
+			if(tMax.y < tMax.z)
+			{
+				//dist += tMax.y;
+				tMax.y += tDelta.y;
+				dist = tMax.y;
+			}
+			else
+			{
+				//dist += tMax.z;
+				tMax.z += tDelta.z;
+				dist = tMax.z;
+			}
+		}
+		
+		// Check new cell for Objects
+		index = Hash(start + delta*dist);
+		if(index >= numBuckets) return nullptr;
+		cell = hashTable[index];
+		if(cell != nullptr)
+		{
+			// Check each Object in cell for collision with ray
+			for(unsigned int i = 0; i < cell->bucket.size(); ++i)
+			{
+				// Make sure we haven't checked this Object already (Objects can be in multiple cells)
+				id = cell->bucket[i]->GetID();
+				if(objectIDs.count(id) == 0)
+				{
+					//objectIDs.insert(id);
+
+					// Check each Collider for each Object
+					numC = cell->bucket[i]->GetColliders(colliders);
+					for(unsigned int j = 0; j < numC; ++j)
+					{
+						// Check that the Collider is enabled and matches the collision mask of the ray
+						if(colliders[j]->IsEnabled() && colliders[j]->QueryCollisionMask(mask))
+						{
+							// Actually test collider against ray
+							if(CollisionTests::RayAABBTest(ray, colliders[j]->GetBounds(), t))
+							//if(CollisionTests::RaySphereTest(ray, colliders[j]->GetPosition(), colliders[j]->GetBounds().GetRadius(), t))
+								return cell->bucket[i];	// if collision, return the object
+						}
+					}
+				}
+			}
+		}
+	} while(dist < 1.0f && tMax.x < 1.0f && tMax.y < 1.0f && tMax.z < 1.0f);
+
+	// No collision with ray
+	return nullptr;
+}
+
+// Just like RayCast, but doesn't stop after the first collision and returns ALL Objects that collide with the Ray
+// Return is a vector of pairs: an Object that collides with the ray, and the distance along the ray 't'
+std::vector<std::pair<Object*, gFloat>> World::RayCastPenetrate(Ray ray, int mask)
+{
+	// Pre-define variables before using them
+	std::vector<std::pair<Object*, gFloat>> objects;
+	SpatialHashCell* cell;
+	std::vector<Collider*> colliders;
+	std::set<unsigned int> objectIDs;
+	unsigned int id, numC, index;
+	gFloat dist = 0, t;
+
+	// Check starting cell for Objects
+	cell = hashTable[Hash(ray.origin)];
+	if(cell != nullptr)
+	{
+		// Check each Object in cell for collision with ray
+		for(unsigned int i = 0; i < cell->bucket.size(); ++i)
+		{
+			// Make sure we haven't checked this Object already (Objects can be in multiple cells)
+			id = cell->bucket[i]->GetID();
+			if(objectIDs.count(id) == 0)
+			{
+				objectIDs.insert(id);
+
+				// Check each Collider for each Object
+				numC = cell->bucket[i]->GetColliders(colliders);
+				for(unsigned int j = 0; j < numC; ++j)
+				{
+					// Check that the Collider is enabled and matches the collision mask of the ray
+					if(colliders[j]->IsEnabled() && colliders[j]->QueryCollisionMask(mask))
+					{
+						// Actually test collider against ray
+						if(CollisionTests::RayAABBTest(ray, colliders[j]->GetBounds(), t))
+							objects.push_back(std::make_pair(cell->bucket[i], t));	// if collision, Save object to return
+					}
+				}
+			}
+		}
+	}
+
+	// Get parameters for moving down the ray incrementally
+	Vector start = ray.origin;
+	Vector delta = ray.GetEndPoint() - start;
+	Vector tDelta, tMax;
+	CalcRaycastParams(ray, tDelta, tMax);
+
+	// Move down ray until it enters a new cell, then check the new cell for collisions
+	do
+	{	// Choose which direction we move to reach a new cell
+		if(tMax.x < tMax.y)
+		{
+			if(tMax.x < tMax.z)
+			{
+				dist += tMax.x;
+				tMax.x += tDelta.x;
+			}
+			else
+			{
+				dist += tMax.z;
+				tMax.z += tDelta.z;
+			}
+		}
+		else
+		{
+			if(tMax.y < tMax.z)
+			{
+				dist += tMax.y;
+				tMax.y += tDelta.y;
+			}
+			else
+			{
+				dist += tMax.z;
+				tMax.z += tDelta.z;
+			}
+		}
+		
+		// Check new cell for Objects
+		index = Hash(start + delta*dist);
+		if(index >= numBuckets) continue;
+		cell = hashTable[index];
+		if(cell != nullptr)
+		{
+			// Check each Object in cell for collision with ray
+			for(unsigned int i = 0; i < cell->bucket.size(); ++i)
+			{
+				// Make sure we haven't checked this Object already (Objects can be in multiple cells)
+				id = cell->bucket[i]->GetID();
+				if(objectIDs.count(id) == 0)
+				{
+					objectIDs.insert(id);
+
+					// Check each Collider for each Object
+					numC = cell->bucket[i]->GetColliders(colliders);
+					for(unsigned int j = 0; j < numC; ++j)
+					{
+						// Check that the Collider is enabled and matches the collision mask of the ray
+						if(colliders[j]->IsEnabled() && colliders[j]->QueryCollisionMask(mask))
+						{
+							// Actually test collider against ray
+							if(CollisionTests::RayAABBTest(ray, colliders[j]->GetBounds(), t))
+								objects.push_back(std::make_pair(cell->bucket[i], t));	// if collision, Save object to return
+						}
+					}
+				}
+			}
+		}
+	} while(tMax.x < 1.0f && tMax.y < 1.0f && tMax.z < 1.0f);
+
+	// Return complete list of all Objects penetrated by ray
+	return objects;
+}
+
+// Calculate the parameters necessary to step along the Ray so that each step enters
+// the next cell in the spatial hash
+void World::CalcRaycastParams(Ray ray, Vector& tDelta, Vector& tMax)
+{
+	Vector start = ray.origin;
+	Vector delta = ray.GetEndPoint() - start;
+	gFloat size = gFloat(cellSize);
+
+	
+	// Fraction of ray that is needed to be traveled to cross an entire cell along each axis 
+	tDelta.x = Abs(delta.x) > EPSILON ? size / Abs(delta.x) : G_MAX;
+	tDelta.y = Abs(delta.y) > EPSILON ? size / Abs(delta.y) : G_MAX;
+	tDelta.z = Abs(delta.z) > EPSILON ? size / Abs(delta.z) : G_MAX;
+
+	// Fraction of ray that is needed to be traveled to reach the border of current cell along each axis
+	// ............just trust me on this one
+	tMax.x = tDelta.x * (gFloat(1.0f) - (fmodf(SameSign(start.x, delta.x) ? Abs(start.x) : Abs(start.x + size * Ceiling(Abs(start.x / size)) * (delta.x > 0 ? 1 : -1)), size) / size));
+	tMax.y = tDelta.y * (gFloat(1.0f) - (fmodf(SameSign(start.y, delta.y) ? Abs(start.y) : Abs(start.y + size * Ceiling(Abs(start.y / size)) * (delta.y > 0 ? 1 : -1)), size) / size));
+	tMax.z = tDelta.z * (gFloat(1.0f) - (fmodf(SameSign(start.z, delta.z) ? Abs(start.z) : Abs(start.z + size * Ceiling(Abs(start.z / size)) * (delta.z > 0 ? 1 : -1)), size) / size));
 }
 
 #pragma endregion

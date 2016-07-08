@@ -137,6 +137,7 @@ void RigidBody::CalcDerivedData()
 */
 	// RigidBody is moving was moved by a collision, which means its BoundingBox needs to be updated
 	CalcBoundingBox();
+	solved = false;
 }
 
 void RigidBody::CalcBoundingBox()
@@ -267,8 +268,10 @@ void RigidBody::AddCollider(Collider* collider)
 
 void RigidBody::LoadMesh(MeshData* meshData)
 {
-	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(meshData, "../GladeEngine/box.png");
+	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(meshData);
+	highlightColor = meshData->color;
 	shaderResource->world = &transformationMatrix;
+	shaderResource->color = &highlightColor;
 }
 
 void RigidBody::LoadMesh(const char* filename)
@@ -374,3 +377,4 @@ void RigidBody::ForceAddVelocity(const Vector& v) {	velocity += v; }
 void RigidBody::ForceAddAngularVelocity(const Vector& v) { angularVelocity += v; }
 void RigidBody::ForceAddAcceleration(const Vector& a) { acceleration += a; }
 void RigidBody::ForceAddAngularAcceleration(const Vector& a) { angularAcceleration += a; }
+void RigidBody::SetSolved() { solved = true; }

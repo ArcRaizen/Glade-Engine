@@ -1221,10 +1221,33 @@ Matrix Matrix::FPSView(const Vector& eye, gFloat pitch, gFloat yaw, gFloat roll/
 	return mat;
 }
 
-// Returns a Perspective Projection Matrix
-Matrix Matrix::Perspective(gFloat fieldOfView, gFloat aspect, gFloat zNear, gFloat zFar)
+// Returns a Perspective Projection Matrix given the vertical Field-Of-View
+Matrix Matrix::PerspectiveFoVY(gFloat fieldOfView, gFloat aspect, gFloat zNear, gFloat zFar)
 {
 	gFloat tan_ = Tan(fieldOfView / 2.0);
+#ifdef LEFT_HANDED_COORDS
+	gFloat mat[16] = {
+		1.0/(aspect*tan_),	0.0,		0.0,							0.0, 
+		0.0,				1.0/tan_,	0.0,							0.0, 
+		0.0,				0.0,		zFar/(zFar-zNear),				1.0, 
+		0.0,				0.0,		(zFar*zNear)/(zNear-zFar),		0.0
+	};
+#else
+	gFloat mat[16] = {
+		1.0/(aspect*tan_),	0.0,		0.0,							0.0, 
+		0.0,				1.0/tan_,	0.0,							0.0, 
+		0.0,				0.0,		zFar/(zNear-zFar),				-1.0, 
+		0.0,				0.0,		(zFar*zNear)/(zNear-zFar),		0.0
+	};
+#endif
+	return Matrix(mat);
+}
+
+// Returns a Perspective Projection Matrix given the horizontal Field-Of-View
+Matrix Matrix::PerspectiveFoVX(gFloat fieldOfView, gFloat aspect, gFloat zNear, gFloat zFar)
+{
+	gFloat fovy = 2 * ATan(Tan(fieldOfView * gFloat(0.5f)) / aspect);	// calc vertical fov from horizontal fov and aspect ratio
+	gFloat tan_ = Tan(fovy * gFloat(0.5f));
 #ifdef LEFT_HANDED_COORDS
 	gFloat mat[16] = {
 		1.0/(aspect*tan_),	0.0,		0.0,							0.0, 

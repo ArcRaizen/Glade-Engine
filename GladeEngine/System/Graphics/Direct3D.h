@@ -23,7 +23,6 @@
 #include "../../Utils/Assert.h"
 
 using namespace DirectX;
-
 namespace Glade {
 class DebugDraw;
 class Direct3D
@@ -37,10 +36,12 @@ public:
 		ID3D11Buffer* ib;
 		unsigned int numVertices, numIndices, texIndex;
 		Matrix* world;
+		D3DXVECTOR4* color;
 	};
 
 	enum class RasterState { SOLID, WIREFRAME };
 	friend class DebugDraw;
+	friend class FontDraw;
 
 	Direct3D();
 	~Direct3D();
@@ -48,13 +49,18 @@ public:
 	bool Initialize(int width, int height, bool vsync, HWND hWnd, bool fullscreen, float depth, float near, unsigned int texSize=10);
 	void Shutdown();
 
-	void StartFrame(float r, float g, float b, float a, Matrix view, Matrix proj);
+	void StartFrame(float* view, float* proj, float r=0.390625f, float g=0.582031f, float b=0.925781f, float a=1.0f);
+	void SetViewProj(float* view, float* proj);
 	void EndFrame();
 
 	// ~~~~ Management Functions ~~~~
-	ShaderResource* CreateBuffers(MeshData* meshData, const char* texFilename);
+	ShaderResource* CreateBuffers(MeshData* meshData);
 	void SetRasterizerState(RasterState rs);
 	void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY top);
+	void EnableZBuffer();
+	void DisableZBuffer();
+	void CreateNewViewport(float w, float h, float topLeftX, float topLeftY, float minZ, float maxZ);
+	void SetViewports(int index=-1);
 
 	// Render an Object from its ShaderResource data
 	void Render(ShaderResource* sr, int flag=0);
@@ -66,6 +72,7 @@ private:
 	bool InitDepthStencilBuffer(int width, int height);
 	bool InitRasterizerState(HWND hWnd);
 	bool InitShader(HWND hWnd);
+	bool InitBlendStates();
 	bool InitVertexLayout();
 
 	bool	vsyncEnabled;
@@ -85,10 +92,17 @@ private:
 	ID3D11RenderTargetView*		gpRenderTargetView;
 	ID3D11Texture2D*			gpDepthStencilBuffer;
 	ID3D11DepthStencilState*	gpDepthStencilState;
+	ID3D11DepthStencilState*	gpDepthDisabledStencilState;
 	ID3D11DepthStencilView*		gpDepthStencilView;
 	ID3D11RasterizerState*		gpRasterStateSolid;
 	ID3D11RasterizerState*		gpRasterStateWireframe;
 	ID3D11InputLayout*			gpLayout;
+	ID3D11BlendState*			gpBlendNoBlend;
+	ID3D11BlendState*			gpBlendAlpha;
+	ID3D11BlendState*			gpBlendAdditive;
+	ID3D11BlendState*			gpBlendSubtractive;
+	D3D11_VIEWPORT*				gpViewports;
+	unsigned int				numViewports;
 
 	// Shader stuff
 	ID3DX11Effect*							gpEffect;
@@ -96,6 +110,7 @@ private:
 	ID3DX11EffectMatrixVariable*			sViewMatrix;
 	ID3DX11EffectMatrixVariable*			sProjectionMatrix;
 	ID3DX11EffectShaderResourceVariable*	sTexture;
+	ID3DX11EffectVectorVariable*			sHighlight;
 	ID3DX11EffectTechnique*					sTechnique;
 };
 }	// namespace

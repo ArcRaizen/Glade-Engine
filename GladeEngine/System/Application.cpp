@@ -21,6 +21,9 @@ bool GApplication::Initialize()
 
 	// Create main camera
 	camera = new Camera();
+	//camera->SetPerspectiveFoVY(45*DEG2RAD, 16.f/9.f, 1.f, 1000.f);
+	//camera->SetOrtho(1280/10, 720/10, -500,500);
+	camera->LookAt(Vector(10, 20, -50), Vector(10,20,50), Vector(0,1,0));
 
 	// Create input object
 	input = new Input();
@@ -59,6 +62,16 @@ bool GApplication::Initialize()
 	// Give debug graphics to graphics locator
 	GraphicsLocator::RegisterDebug(dDraw);
 
+	fontDraw = new FontDraw();
+	if(!fontDraw->InitFontDraw(hWnd, screenWidth, screenHeight))
+	{
+		MessageBox(hWnd, "Could not initialize Font Draw", "Error", MB_OK);
+		return false;
+	}
+
+	// Give font draw to graphics location
+	GraphicsLocator::RegisterFont(fontDraw);
+
 	return true;
 }
 
@@ -72,9 +85,24 @@ void GApplication::Shutdown()
 		d3d = 0;
 	}
 
+	if(dDraw)
+	{
+		dDraw->Shutdown();
+		delete dDraw;
+		dDraw = 0;
+	}
+
+	if(fontDraw)
+	{
+		fontDraw->Shutdown();
+		delete fontDraw;
+		fontDraw = 0;
+	}
+
 	// Release input
 	if(input)
 	{
+		input->Shutdown();
 		delete input;
 		input = 0;
 	}
@@ -91,9 +119,7 @@ void GApplication::Run()
 	ZeroMemory(&msg, sizeof(MSG));
 
 	// Initialize timer stuff
-	prevTime = 0;
-	QueryPerformanceFrequency((LARGE_INTEGER*)&countsPerSec);
-	secondsPerCount = 1.0 / (double)countsPerSec;
+	gameTimer.Start();
 
 	// Loop until there is a quit message from the window or the user
 	gFloat dt;
@@ -111,14 +137,12 @@ void GApplication::Run()
 			done = true;
 		else
 		{
-			// Use appropriate method to get time
-			QueryPerformanceCounter((LARGE_INTEGER*)&curTime);
-			dt = (curTime - prevTime) * secondsPerCount;
+			gameTimer.Tick();
+			gameTimer.DeltaTime(dt);
 			input->Update(dt);
 			if(!Update(dt))
 				done = true;
 			Render();
-			prevTime = curTime;
 		}
 	}
 }

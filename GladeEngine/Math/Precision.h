@@ -15,6 +15,7 @@ namespace Glade
 	typedef float gFloat;
 
 	#define G_MAX FLT_MAX			// Highest value for real numbers
+	#define G_MIN FLT_MIN			// Lowest value for real number
 	#define Sqrt sqrtf				// Square Root function
 	#define Abs fabsf				// Absolute Value function
 	#define Ceiling ceilf			// Ceiling function
@@ -49,6 +50,7 @@ namespace Glade
 	typedef double gFloat;
 	
 	#define G_MAX DBL_MAX			// Highest value for real numbers
+	#define G_MIN DBL_MIN			// Lowest value for real number
 	#define Sqrt sqrt				// Square Root function
 	#define Abs fabs				// Absolute Value function
 	#define Ceiling ceil			// Ceiling function

@@ -16,6 +16,15 @@ inline T Square(T val) { return val * val; }
 template <typename T>
 inline T Cube(T val) { return val * val * val; }
 
+// Return if two numbers have the same sign
+inline bool SameSign(int a, int b) { return (a >= 0) ^ (b < 0); }
+template <typename T>
+inline bool SameSign(T a, T b) { return (a < 0) == (b < 0); }
+
+// Return unit value with same sign as passed parameter
+template <typename T>
+inline T Sign(T a) { return a < T(0) ? T(-1) : T(1); }
+
 // Pythagorean Theorem - a^2 + b^2 = c^2
 inline gFloat PythagoreanSolve(gFloat a, gFloat b) { return Sqrt(a*a + b*b); }
 inline gFloat PythagoreanSolve(gFloat a, gFloat b, gFloat c) { return Sqrt(a*a + b*b + c*c); }

@@ -9,10 +9,8 @@ bool RigidBodyDemo::Initialize()
 	if(!GApplication::Initialize())
 		return false;
 	input->InitArcball();
-
-	camera->SetPerspective(45*DEG2RAD, 16.f/9.f, 1.f, 1000.f);
-	//camera->SetOrtho(1280/10, 720/10, -500,500);
-	camera->LookAt(Vector(10, 20, -50), Vector(10,20,50), Vector(0,1,0));
+	baseView = camera->GetView();
+	ortho = Matrix::Ortho(1280, 720, 1, 1000);
 
 	typedef PhysicMaterial::PhysicMaterialCombine MaterialCombine;
 	boxMaterial = new PhysicMaterial(MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN, 
@@ -20,26 +18,29 @@ bool RigidBodyDemo::Initialize()
 	planeMaterial = new PhysicMaterial(MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN,
 		0.4f, 0.5f, 0.4f);
 
-	MeshData* boxMesh = GeometryGenerator::CreateBox(4, 4, 4);
-	MeshData* planeMesh = GeometryGenerator::CreateBox(20, 2, 20);
+	MeshData* boxMesh = GeometryGenerator::CreateBox(4, 4, 4, "box.png");
+	MeshData* cylinderMesh = GeometryGenerator::CreateCylinder(2, 5, 16, 1, "checkerboardsmall.png");
+	MeshData* planeMesh = GeometryGenerator::CreateBox(20, 2, 20, "box.png");
 
 	gFloat boxInvMass = 0.2f;
 	gFloat planeInvMass = 0.00f;
-	box = new RigidBody(Vector(-3,12.5,10), Quaternion(0,0,-00*DEG2RAD), Vector(0,0,0), Vector(0,0,0), Vector(100,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
+	box = new RigidBody(Vector(-3,12.5,10), Quaternion(0,0,-00*DEG2RAD), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
 	box->AddCollider(new BoxCollider(box, boxMaterial, boxInvMass, Vector(2,2,2)));
 	//box->AddCollider(new SphereCollider(box, boxInvMass, 2));
 	box->LoadMesh(boxMesh);
 	box->AllowSetVelocity();
-	box->SetAwake(false);
+	box->SetAwake(true);
 
-	box2 = new RigidBody(Vector(-2.9,16,10), Quaternion(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
+	box2 = new RigidBody(Vector(-2.9,50,10), Quaternion(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
 	box2->AddCollider(new BoxCollider(box2, boxMaterial, boxInvMass, Vector(2,2,2)));
 	box2->LoadMesh(boxMesh);
-	box2->SetAwake(true);
+	box2->SetAwake(false);
 
 	box3 = new RigidBody(Vector(10,20.7,10), Quaternion(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
-	box3->AddCollider(new BoxCollider(box3, boxMaterial, boxInvMass, Vector(2,2,2)));
-	box3->LoadMesh(boxMesh);
+	//box3->AddCollider(new BoxCollider(box3, boxMaterial, boxInvMass, Vector(2,2,2)));
+	box3->AddCollider(new CylinderCollider(box3, boxMaterial, boxInvMass, 2, 5));
+	//box3->LoadMesh(boxMesh);
+	box3->LoadMesh(cylinderMesh);
 	box3->SetAwake(false);
 
 	plane = new RigidBody(Vector(3,10,10), Quaternion(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 1, 1, true, Vector::GRAVITY);
@@ -47,16 +48,17 @@ bool RigidBodyDemo::Initialize()
 	plane->LoadMesh(planeMesh);
 	//plane->SetInverseInertiaTensor(Matrix::INFINITE_MASS_INERTIA_TENSOR/*Matrix::CuboidInverseInertiaTensor(1.0f/planeInvMass, Vector(20, 2, 20))*/);
 
-	world = new World(100);
+	world = new World(-100, 100, 10, 100);
 	world->AddRigidBody(box);
 	world->AddRigidBody(box2);
 	world->AddRigidBody(box3);
 	world->AddRigidBody(plane);
 
 	delete boxMesh;
+	delete cylinderMesh;
 	delete planeMesh;
 
-	camera->SetWatchTarget(box, Vector(0,0,0));
+//	camera->SetWatchTarget(box, Vector(0,0,0));
 
 	GraphicsLocator::GetGraphics()->SetRasterizerState(Direct3D::RasterState::SOLID);
 	GraphicsLocator::GetGraphics()->SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -92,6 +94,19 @@ bool RigidBodyDemo::Update(float dt)
 	}
 	camera->Update(dt);
 
+	std::string s = std::to_string(camera->GetView()(3,0));
+	int i = s.length();
+	char* test = new char[i+1];
+	strcpy_s(test, i+1, s.c_str());
+	GraphicsLocator::GetFontGraphics()->PushSentence("test", test, 20, 0, 1, 0, 0);
+	delete [] test;
+
+	Ray ray = input->GetMousePickRay(hWnd, camera->GetView(), camera->GetProj());
+	gFloat t;
+	Object* o = world->RayCast(ray, t, 1);
+	if(o != nullptr)
+		o->SetHightlightColor(D3DXVECTOR4(0,0,1,1));
+
 /*	static gFloat force = 20;
 	if(input->IsKeyDown(DIK_UPARROW))
 		force += 1;
@@ -110,12 +125,12 @@ bool RigidBodyDemo::Update(float dt)
 
 void RigidBodyDemo::Render()
 {
-	GraphicsLocator::GetGraphics()->StartFrame(100.f/256.f,149.f/256.f,237.f/256.f,1, camera->GetView(), camera->GetProj());
+	GraphicsLocator::GetGraphics()->StartFrame((float*)camera->GetView(), (float*)camera->GetProj());
+	world->Render(camera);
 	GraphicsLocator::GetDebugGraphics()->Render(camera->GetView(), camera->GetProj());
-	box->Render();
-	box2->Render();
-	box3->Render();
-	plane->Render();
+	GraphicsLocator::GetGraphics()->DisableZBuffer();
+	GraphicsLocator::GetFontGraphics()->Render(baseView, ortho);
+	GraphicsLocator::GetGraphics()->EnableZBuffer();
 	GraphicsLocator::GetGraphics()->EndFrame();
 }
 

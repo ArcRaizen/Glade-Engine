@@ -7,6 +7,7 @@
 #include "Graphics\GraphicsLocator.h"
 #include "Camera.h"
 #include "Input.h"
+#include "Timer.h"
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,19 +36,13 @@ protected:
 	HINSTANCE hInstance;
 	HWND hWnd;
 
-	// Time
-	LONGLONG curTime;
-	LONGLONG prevTime;
-	LONGLONG perfCnt;
-	BOOL perfFlag;
-	_int64 countsPerSec;
-	double secondsPerCount;
-
+	Timer gameTimer;
 	Camera* camera;
 	Input* input;
 private:
 	Direct3D* d3d;
 	DebugDraw* dDraw;
+	FontDraw* fontDraw;
 };
 
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);

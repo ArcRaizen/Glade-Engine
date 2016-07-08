@@ -30,7 +30,7 @@ public:
 		switch(Max(bouncinessCombine, m->bouncinessCombine))
 		{
 			case PhysicMaterialCombine::AVERAGE:
-				return ((bounciness + m->bounciness) / gFloat(2.0f));
+				return ((bounciness + m->bounciness) * gFloat(0.5f));
 			case PhysicMaterialCombine::GEOMETRIC_AVERAGE:
 				return Sqrt(bounciness * m->bounciness);
 			case PhysicMaterialCombine::PYTHAGOREAN:
@@ -49,7 +49,7 @@ public:
 		switch(Max(frictionCombine, m->frictionCombine))
 		{
 			case PhysicMaterialCombine::AVERAGE:
-				return ((staticFriction + m->staticFriction) / gFloat(2.0f));
+				return ((staticFriction + m->staticFriction) * gFloat(0.5f));
 			case PhysicMaterialCombine::GEOMETRIC_AVERAGE:
 				return Sqrt(staticFriction * m->staticFriction);
 			case PhysicMaterialCombine::PYTHAGOREAN:
@@ -68,7 +68,7 @@ public:
 		switch(Max(frictionCombine, m->frictionCombine))
 		{
 			case PhysicMaterialCombine::AVERAGE:
-				return ((dynamicFriction + m->dynamicFriction) / gFloat(2.0f));
+				return ((dynamicFriction + m->dynamicFriction) * gFloat(0.5f));
 			case PhysicMaterialCombine::GEOMETRIC_AVERAGE:
 				return Sqrt(dynamicFriction * m->dynamicFriction);
 			case PhysicMaterialCombine::PYTHAGOREAN:

@@ -21,6 +21,11 @@ Object::Object(Vector p, Vector a, gFloat iMass, gFloat lDamp, bool ug, Vector g
 #endif
 	{ }
 
+Object::~Object()
+{
+	delete shaderResource;
+}
+
 bool Object::operator== (const Object& other) { return ID == other.ID; }
 bool Object::operator< (const Object& other) { return ID < other.ID; }
 unsigned int Object::GetID() { return ID; }
@@ -124,11 +129,14 @@ gFloat Object::GetInverseMass() const { return inverseMass; }
 Matrix Object::GetTransformMatrix() const { return transformationMatrix; }
 void Object::GetTransformMatrix(Matrix* m) const { *m = transformationMatrix; }
 
-AABB Object::GetBoundingBox() { return boundingBox; }
+AABB Object::GetBoundingBox() const { return boundingBox; }
+AABB& Object::GetBoundingBox() { return boundingBox; }
 
-gFloat Object::GetRadius() { return radius; }
+gFloat Object::GetRadius() const { return radius; }
 
-gFloat Object::GetRadiusSquared() { return radius * radius; }
+gFloat Object::GetRadiusSquared() const { return radius * radius; }
+
+void Object::SetHightlightColor(D3DXVECTOR4 c) { highlightColor = c; }
 
 std::set<int> Object::GetHashIndices() { return hashIndices; }
 void Object::SetHashIndices(std::set<int> indices) { hashIndices = indices; }

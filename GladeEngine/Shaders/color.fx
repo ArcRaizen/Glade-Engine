@@ -4,6 +4,11 @@
 // Transforms and colors geometry.
 //***************************************************************************************
 
+cbuffer CBPerObject
+{
+	float4 color : COLOR;
+}
+
 cbuffer CBPerFrame
 {
 	float4x4 viewMatrix;
@@ -13,13 +18,11 @@ cbuffer CBPerFrame
 struct VertexInputType
 {
 	float4 position   : POSITION;
-	float4 color : COLOR;
 };
 
 struct PixelInputType
 {
 	float4 position  : SV_POSITION;
-    float4 color : COLOR;
 };
 
 PixelInputType ColorVertexShader(VertexInputType input)
@@ -31,14 +34,13 @@ PixelInputType ColorVertexShader(VertexInputType input)
 	output.position = mul(input.position, viewMatrix);
 	output.position = mul(output.position, projectionMatrix);
 	//output.position = input.position;
-    output.color = input.color;
     
     return output;
 }
 
 float4 ColorPixelShader(PixelInputType input) : SV_Target
 {
-    return input.color;
+    return color;
 }
 
 technique10 ColorTechnique

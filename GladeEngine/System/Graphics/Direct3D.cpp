@@ -39,7 +39,6 @@ bool Direct3D::Initialize(int width, int height, bool vsync, HWND hWnd, bool ful
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
 	D3D_FEATURE_LEVEL featureLevel;
 	ID3D11Texture2D* backBufferPtr;
-	D3D11_VIEWPORT viewport;
 	float fieldOfView, screenAspect;
 
 	// Save vsync setting
@@ -173,21 +172,26 @@ bool Direct3D::Initialize(int width, int height, bool vsync, HWND hWnd, bool ful
 	if(!InitShader(hWnd))
 		return false;
 
+	// Initialize Blend States
+	if(!InitBlendStates())
+		return false;
+
 	// Initialize Vertex Layout
 	if(!InitVertexLayout())
 		return false;
 
 	// Setup the viewport for rendering.
-	viewport.Width = (float)width;
-	viewport.Height = (float)height;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
-	viewport.TopLeftX = 0.0f;
-	viewport.TopLeftY = 0.0f;
+	numViewports = 1;
+	gpViewports = new D3D11_VIEWPORT[1];
+	gpViewports[0].Width = (float)width;
+	gpViewports[0].Height = (float)height;
+	gpViewports[0].MinDepth = 0.0f;
+	gpViewports[0].MaxDepth = 1.0f;
+	gpViewports[0].TopLeftX = 0.0f;
+	gpViewports[0].TopLeftY = 0.0f;
 
 	// Create viewport
-	gpDeviceContext->RSSetViewports(1, &viewport);
-
+	gpDeviceContext->RSSetViewports(1, gpViewports);
 
 	// Create texture list
 	textureListSize = texSize;
@@ -240,6 +244,11 @@ bool Direct3D::InitDepthStencilBuffer(int width, int height)
 	if(FAILED(gpDevice->CreateDepthStencilState(&depthStencilDesc, &gpDepthStencilState)))
 		return false;
 
+	// Setup and create second depth stencil state with depth disabled
+	depthStencilDesc.DepthEnable = false;
+	if(FAILED(gpDevice->CreateDepthStencilState(&depthStencilDesc, &gpDepthDisabledStencilState)))
+		return false;
+
 	// Set depth stencil state
 	gpDeviceContext->OMSetDepthStencilState(gpDepthStencilState, 1);
 	
@@ -265,7 +274,7 @@ bool Direct3D::InitRasterizerState(HWND hWnd)
 	D3D11_RASTERIZER_DESC rasterDesc;
 	ZeroMemory(&rasterDesc, sizeof(rasterDesc));
 		rasterDesc.AntialiasedLineEnable = false;
-		rasterDesc.CullMode = D3D11_CULL_BACK;
+		rasterDesc.CullMode = D3D11_CULL_NONE;
 		rasterDesc.DepthBias = 0;
 		rasterDesc.DepthBiasClamp = 0.0f;
 		rasterDesc.DepthClipEnable = true;
@@ -318,7 +327,62 @@ bool Direct3D::InitShader(HWND hWnd)
 	sViewMatrix = gpEffect->GetVariableByName("viewMatrix")->AsMatrix();
 	sProjectionMatrix = gpEffect->GetVariableByName("projectionMatrix")->AsMatrix();
 	sTexture = gpEffect->GetVariableByName("shaderTexture")->AsShaderResource();
+	sHighlight = gpEffect->GetVariableByName("highlightColor")->AsVector();
 	sTechnique = gpEffect->GetTechniqueByName("TextureTechnique");
+	return true;
+}
+
+bool Direct3D::InitBlendStates()
+{
+	// No Blend
+	D3D11_BLEND_DESC blendStateDesc;
+	ZeroMemory(&blendStateDesc, sizeof(blendStateDesc));
+	blendStateDesc.RenderTarget[0].BlendEnable = false;
+	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	if(FAILED(gpDevice->CreateBlendState(&blendStateDesc, &gpBlendNoBlend)))
+		return false;
+
+	// Alpha Blend
+	ZeroMemory(&blendStateDesc, sizeof(blendStateDesc));
+	blendStateDesc.RenderTarget[0].BlendEnable = true;
+	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendStateDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	if(FAILED(gpDevice->CreateBlendState(&blendStateDesc, &gpBlendAlpha)))
+		return false;
+
+	// Additive Blend
+	ZeroMemory(&blendStateDesc, sizeof(blendStateDesc));
+	blendStateDesc.RenderTarget[0].BlendEnable = true;
+	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendStateDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_SRC_ALPHA;
+	blendStateDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_INV_SRC_ALPHA;
+	blendStateDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	if(FAILED(gpDevice->CreateBlendState(&blendStateDesc, &gpBlendAdditive)))
+		return false;
+
+	// Subtractive Blend
+	ZeroMemory(&blendStateDesc, sizeof(blendStateDesc));
+	blendStateDesc.RenderTarget[0].BlendEnable = true;
+	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_REV_SUBTRACT;
+	blendStateDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ZERO;
+	blendStateDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendStateDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_SUBTRACT;
+	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	if(FAILED(gpDevice->CreateBlendState(&blendStateDesc, &gpBlendSubtractive)))
+		return false;
+
+	// Set default blend state
+	gpDeviceContext->OMSetBlendState(gpBlendAlpha, 0, 0xffffffff);
 	return true;
 }
 
@@ -336,8 +400,6 @@ bool Direct3D::InitVertexLayout()
 		0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT,
 		0, 36, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT,
-		0, 44, D3D11_INPUT_PER_VERTEX_DATA, 0 }
 	};
 
 	unsigned int numElements = sizeof(vertexDesc) / sizeof(vertexDesc[0]);
@@ -363,6 +425,12 @@ void Direct3D::Shutdown()
 	ReleaseCOM(gpDepthStencilState)
 	ReleaseCOM(gpDepthStencilBuffer)
 	ReleaseCOM(gpRenderTargetView)
+	ReleaseCOM(gpEffect)
+	ReleaseCOM(gpLayout)
+	ReleaseCOM(gpBlendNoBlend)
+	ReleaseCOM(gpBlendAlpha)
+	ReleaseCOM(gpBlendAdditive)
+	ReleaseCOM(gpBlendSubtractive)
 	ReleaseCOM(gpDeviceContext)
 	ReleaseCOM(gpDevice)
 	ReleaseCOM(gpSwapChain)
@@ -375,7 +443,7 @@ void Direct3D::Shutdown()
 	delete [] textureList;
 }
 
-Direct3D::ShaderResource* Direct3D::CreateBuffers(MeshData* meshData, const char* texFilename)
+Direct3D::ShaderResource* Direct3D::CreateBuffers(MeshData* meshData)
 {
 	ID3D11Buffer* vb, *ib;
 
@@ -407,7 +475,7 @@ Direct3D::ShaderResource* Direct3D::CreateBuffers(MeshData* meshData, const char
 	gpDevice->CreateBuffer(&iBufferDesc, &iInitData, &ib);
 
 	// Check if we have already loaded the specified texture
-	std::string tex = texFilename;
+	std::string tex = meshData->texFilename;
 	if(texFilenameMap.find(tex) == texFilenameMap.end())
 	{
 		// If not, create the ShaderResourceView for this texture and store it
@@ -426,7 +494,7 @@ Direct3D::ShaderResource* Direct3D::CreateBuffers(MeshData* meshData, const char
 			textureListSize *= 2;
 		}
 		
-		D3DX11CreateShaderResourceViewFromFile(gpDevice, texFilename, 0, 0, &textureList[texFilenameMap[tex]], 0);
+		D3DX11CreateShaderResourceViewFromFile(gpDevice, tex.c_str(), 0, 0, &textureList[texFilenameMap[tex]], 0);
 	}
 
 	// Return return info to calling object.
@@ -455,7 +523,52 @@ void Direct3D::SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY top)
 	gpDeviceContext->IASetPrimitiveTopology(top);
 }
 
-void Direct3D::StartFrame(float re, float gr, float bl, float al, Matrix view, Matrix proj)
+void Direct3D::EnableZBuffer()
+{
+	gpDeviceContext->OMSetDepthStencilState(gpDepthStencilState, 1);
+}
+
+void Direct3D::DisableZBuffer()
+{
+	gpDeviceContext->OMSetDepthStencilState(gpDepthDisabledStencilState, 1);
+}
+
+// Create a new viewport to draw into
+void Direct3D::CreateNewViewport(float w, float h, float topLeftX, float topLeftY, float minZ, float maxZ)
+{
+	// Create new array of viewports
+	D3D11_VIEWPORT* viewports = new D3D11_VIEWPORT[numViewports+1];
+
+	// Copy over old viewports to new array
+	for(unsigned int i = 0; i < numViewports; ++i)
+		viewports[i] = gpViewports[i];
+
+	// Setup new viewport
+	viewports[numViewports].Width = w;
+	viewports[numViewports].Height = h;
+	viewports[numViewports].TopLeftX = topLeftX;
+	viewports[numViewports].TopLeftY = topLeftY;
+	viewports[numViewports].MinDepth = minZ;
+	viewports[numViewports].MaxDepth = maxZ;
+
+	// Migrate over to new viewport array
+	delete [] gpViewports;
+	gpViewports = viewports;
+
+	gpDeviceContext->RSSetViewports(++numViewports, gpViewports);
+}
+
+// Set the current viewport (pass -1 to set to full array of all viewports)
+void Direct3D::SetViewports(int index/*=-1*/)
+{
+	AssertMsg(index >= -1 && index < numViewports, "Viewport Index Out of Bounds");
+	if(index == -1)
+		gpDeviceContext->RSSetViewports(numViewports, gpViewports);
+	else
+		gpDeviceContext->RSSetViewports(1, &gpViewports[index]);
+}
+
+void Direct3D::StartFrame(float* view, float* proj, float re, float gr, float bl, float al)
 {
 	// Clear back buffer
 	float color[4] = {re,gr,bl,al};
@@ -467,8 +580,14 @@ void Direct3D::StartFrame(float re, float gr, float bl, float al, Matrix view, M
 	gpDeviceContext->IASetInputLayout(gpLayout);
 
 	// Update CBuffer variables
-	sViewMatrix->SetMatrix((float*)view);
-	sProjectionMatrix->SetMatrix((float*)proj);
+	sViewMatrix->SetMatrix(view);
+	sProjectionMatrix->SetMatrix(proj);
+}
+
+void Direct3D::SetViewProj(float* view, float* proj)
+{
+	sViewMatrix->SetMatrix(view);
+	sProjectionMatrix->SetMatrix(proj);
 }
 
 void Direct3D::EndFrame()
@@ -491,6 +610,7 @@ void Direct3D::Render(ShaderResource* sr, int flag/*=0*/)
 	gpDeviceContext->IASetIndexBuffer(sr->ib, DXGI_FORMAT_R32_UINT, 0);
 
 	sWorldMatrix->SetMatrix((float*)sr->world);
+	sHighlight->SetFloatVector((float*)sr->color);
 	sTexture->SetResource(textureList[sr->texIndex]);
 	sTechnique->GetPassByIndex(0)->Apply(0, gpDeviceContext);
 

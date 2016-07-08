@@ -4,58 +4,52 @@
 #include <D3dx10math.h>
 #pragma comment(lib, "d3dx9.lib")
 // Vertex struct for graphics drawing
-// Simple definition Pos, Color (no texture)
+// Simple definition Pos (no texture)
 struct SVertexC
 {
 	SVertexC() { }
-	SVertexC(const D3DXVECTOR3& p, const D3DXVECTOR4& c=D3DXVECTOR4(1,1,1,1)) :
-		position(p), color(c) { }
+	SVertexC(const D3DXVECTOR3& p) :
+		position(p) { }
 	SVertexC(
-		float px, float py, float pz, 
-		float r=1, float g=1, float b=1, float a=1)
-		: position(px,py,pz), color(r,g,b,a) { }
+		float px, float py, float pz)
+		: position(px,py,pz) { }
 
 	D3DXVECTOR3 position;
-	D3DXVECTOR4 color;
 };
 
 // Vertex struct for graphics drawing
-// Simple definition - Pos, UV, Color only
+// Simple definition - Pos, UV only
 struct SVertex
 {
 	SVertex() { }
-	SVertex(const D3DXVECTOR3& p, const D3DXVECTOR2& uv, const D3DXVECTOR4& c=D3DXVECTOR4(1,1,1,1)) :
-		position(p), texCoord(uv), color(c) { }
+	SVertex(const D3DXVECTOR3& p, const D3DXVECTOR2& uv) :
+		position(p), texCoord(uv) { }
 	SVertex(
 		float px, float py, float pz, 
-		float u, float v,
-		float r=1, float g=1, float b=1, float a=1)
-		: position(px,py,pz), texCoord(u,v), color(r,g,b,a) { }
+		float u, float v)
+		: position(px,py,pz), texCoord(u,v) { }
 
 	D3DXVECTOR3 position;
 	D3DXVECTOR2 texCoord;
-	D3DXVECTOR4 color;
 };
 
 // Vertex Struct for graphics drawing
-// Full definition - Pos, Normal, Tangent, Color (no texture)
+// Full definition - Pos, Normal, Tangent (no texture)
 struct VertexC
 {
 	VertexC() { }
-	VertexC(const D3DXVECTOR3& p, const D3DXVECTOR3& n, const D3DXVECTOR3& t, const D3DXVECTOR4& c=D3DXVECTOR4(1,1,1,1)) :
-		position(p), normal(n), tangent(t), color(c) { }
+	VertexC(const D3DXVECTOR3& p, const D3DXVECTOR3& n, const D3DXVECTOR3& t) :
+		position(p), normal(n), tangent(t) { }
 	VertexC(
 		float px, float py, float pz, 
 		float nx, float ny, float nz,
-		float tx, float ty, float tz,
-		float r=1, float g=1, float b=1, float a=1)
+		float tx, float ty, float tz)
 		: position(px,py,pz), normal(nx,ny,nz),
-			tangent(tx, ty, tz),  color(r,g,b,a) { }
+			tangent(tx, ty, tz) { }
 
 	D3DXVECTOR3 position;
 	D3DXVECTOR3 normal;
 	D3DXVECTOR3 tangent;
-	D3DXVECTOR4 color;
 };
 
 
@@ -64,37 +58,37 @@ struct VertexC
 struct Vertex
 {
 	Vertex() { }
-	Vertex(const D3DXVECTOR3& p, const D3DXVECTOR3& n, const D3DXVECTOR3& t, const D3DXVECTOR2& uv, const D3DXVECTOR4& c=D3DXVECTOR4(1,1,1,1)) :
-		position(p), normal(n), tangent(t), texCoord(uv), color(c) { }
+	Vertex(const D3DXVECTOR3& p, const D3DXVECTOR3& n, const D3DXVECTOR3& t, const D3DXVECTOR2& uv) :
+		position(p), normal(n), tangent(t), texCoord(uv) { }
 	Vertex(
 		float px, float py, float pz, 
 		float nx, float ny, float nz,
 		float tx, float ty, float tz,
-		float u, float v,
-		float r=1, float g=1, float b=1, float a=1)
+		float u, float v)
 		: position(px,py,pz), normal(nx,ny,nz),
-			tangent(tx, ty, tz), texCoord(u,v), color(r,g,b,a) { }
+			tangent(tx, ty, tz), texCoord(u,v) { }
 
 	Vertex(const VertexC& vc) : 
 		position(vc.position), normal(vc.normal), tangent(vc.tangent),
-		texCoord(D3DXVECTOR2(-1,-1)), color(vc.color) { }
+		texCoord(D3DXVECTOR2(-1,-1)) { }
 	Vertex(const SVertex& sv) :
 		position(sv.position), normal(D3DXVECTOR3(-1,-1,-1)), tangent(D3DXVECTOR3(-1,-1,-1)),
-		texCoord(sv.texCoord), color(sv.color) { }
+		texCoord(sv.texCoord) { }
 	Vertex(const SVertexC& svc) :
 		position(svc.position), normal(D3DXVECTOR3(-1,-1,-1)), tangent(D3DXVECTOR3(-1,-1,-1)),
-		texCoord(D3DXVECTOR2(-1,-1)), color(svc.color) { }
+		texCoord(D3DXVECTOR2(-1,-1)) { }
 
 	D3DXVECTOR3 position;
 	D3DXVECTOR3 normal;
 	D3DXVECTOR3 tangent;
 	D3DXVECTOR2 texCoord;
-	D3DXVECTOR4 color;
 };
 
 struct MeshData
 {
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
+	std::string texFilename;
+	D3DXVECTOR4 color;
 };
 #endif	// GLADE_VERTEX_F

@@ -110,7 +110,8 @@ public:
 	static Matrix MatrixFromAxisAngle(gFloat angle, gFloat x, gFloat y, gFloat z);
 	static Matrix LookAt(const Vector& eye, const Vector& target, const Vector& up);
 	static Matrix FPSView(const Vector& eye, gFloat pitch, gFloat yaw, gFloat roll=gFloat(0.0f));
-	static Matrix Perspective(gFloat fieldOfView, gFloat aspect, gFloat zNear, gFloat zFar);
+	static Matrix PerspectiveFoVY(gFloat fieldOfView, gFloat aspect, gFloat zNear, gFloat zFar);
+	static Matrix PerspectiveFoVX(gFloat fieldOfView, gFloat aspect, gFloat zNear, gFloat zFar);
 	static Matrix Ortho(gFloat width, gFloat height, gFloat zNear, gFloat zFar);
 
 	// Inverse Inertia Tensors

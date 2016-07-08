@@ -59,6 +59,12 @@ void Contact::ResolveImpulse(Vector (&deltaVel)[2], Vector (&deltaAngVel)[2])
 		b2->ForceAddVelocity(deltaVel[1]);
 		b2->ForceAddAngularVelocity(deltaAngVel[1]);
 	}
+
+	if(b1->GetInverseMass() == 0 || (b2 != nullptr) && b2->GetInverseMass() != 0)
+	{
+		b1->SetSolved();
+		b2->SetSolved();
+	}
 }
 
 void Contact::ResolveImpulse2(Vector (&deltaVel)[2], Vector (&deltaAngVel)[2])

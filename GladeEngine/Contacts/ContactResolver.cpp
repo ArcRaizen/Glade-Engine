@@ -1,5 +1,5 @@
 #include "ContactResolver.h"
-
+#include "../Utils/Trace.h"
 using namespace Glade;
 
 ContactResolver::ContactResolver(unsigned int iter, gFloat impEp, gFloat penEp) : impulseIterations(iter), penetrationIterations(iter), impulseEpsilon(impEp), penetrationEpsilon(penEp) { }
@@ -43,7 +43,7 @@ void ContactResolver::ResolveImpulse(ContactBatchNode* contactBatch, unsigned in
 	impulseIterationsUsed = 0;
 	while(impulseIterationsUsed < impulseIterations)
 	{
-		// Find Contact with maximum magnitude of probably velocity change
+		// Find Contact with maximum magnitude of probable velocity change
 		max = -impulseEpsilon;
 		index = numContacts;
 		for(i = 0; i < numContacts; ++i)
@@ -386,6 +386,11 @@ void ContactResolver::ResolveInterpenetration3(ContactBatch* contactBatch, unsig
 	resolutions[major->contact.b2].deltaPos += deltaPos[1];
 	resolutions[major->contact.b2].deltaOrient += deltaOrient[1];
 	// These are not going to change...EVER!
+	if(deltaOrient[0] != Vector() || deltaOrient[1] != Vector())
+	{
+		int x = 5;
+		x++;
+	}
 
 	struct ContactGraph
 	{ 
@@ -409,7 +414,6 @@ void ContactResolver::ResolveInterpenetration3(ContactBatch* contactBatch, unsig
 		list = major->GetRight();
 		for(auto iter = list.begin(); iter != list.end(); ++iter)
 			queue.push(ContactGraph(*iter, major->contact.b2, major->contact.normal, &major->contact));
-
 
 		ContactGraph cg;
 		while(queue.size() > 0)
@@ -469,10 +473,11 @@ void ContactResolver::ResolveInterpenetration3(ContactBatch* contactBatch, unsig
 			// If 1st body in Contact is the body shared with parent Contact
 			if(cg.node->contact.b1 == cg.parentBody)
 			{	// If resolution of shared body in some way goes against the resolution of parent Contact (would make parent Contact penetrate again)
-				if(deltaPos[0].DotProduct(cg.parentNormal) < gFloat(0.0f))
+				gFloat dot = deltaPos[0].DotProduct(cg.parentNormal);
+				if(dot< gFloat(0.0f))
 				{
 					// Negate that resolution, push other body out in opposite direction by same amount
-					Vector blah2 = cg.parentNormal * cg.parentNormal.DotProduct(deltaPos[0]);	// said resolution
+					Vector blah2 = cg.parentNormal * dot;	// said resolution
 					deltaPos[1] -= blah2;	// add resolution onto other body
 					deltaPos[0] -= blah2;	// remove resolution from shared body (it cannot resolve in this direction)
 					deltaPos[1] += blah;	// add shared body's resolution from parent Contact to other body
@@ -485,18 +490,23 @@ void ContactResolver::ResolveInterpenetration3(ContactBatch* contactBatch, unsig
 					Vector dPos[2], dOri[2];
 					// Calc resolution that would have been resolved via rotation
 					//gFloat pen = deltaOrient[0].CrossProduct(cg.parentContact->b1ContactPoint).DotProduct(cg.node->contact.normal);
-					gFloat pen = cg.node->contact.penetrationDepth + deltaPos[0].DotProduct(cg.node->contact.normal) - deltaPos[1].DotProduct(cg.node->contact.normal);
+					gFloat pen = cg.node->contact.penetrationDepth + blah + deltaPos[0].DotProduct(cg.node->contact.normal) - deltaPos[1].DotProduct(cg.node->contact.normal);
 
 
 					// If Contact normal is in same direction as parent normal (like boxes in a stack)
-					if(Abs(cg.node->contact.normal.DotProduct(cg.parentNormal)) == gFloat(1.0f))
+					if(Abs(cg.node->contact.normal.DotProduct(cg.parentNormal)) >= gFloat(0.1f))
 					{	// Recalc resolutions for penetration missing from rotation
 						cg.node->contact.CalculatePenetrationResolution(dPos, dOri, pen);
 
 						// Apply
+					//	deltaPos[1] += cg.node->contact.normal * pen;
+					//	deltaOrient[0] = cg.parentNormal * deltaOrient[0].DotProduct(cg.parentNormal);
+					//	deltaOrient[1] = cg.parentNormal * deltaOrient[1].DotProduct(cg.parentNormal);
+					//	6/5/16
+
 						deltaPos[1] += cg.node->contact.normal * pen;
-						deltaOrient[0] = cg.parentNormal * deltaOrient[0].DotProduct(cg.parentNormal);
-						deltaOrient[1] = cg.parentNormal * deltaOrient[1].DotProduct(cg.parentNormal);
+						deltaOrient[0].Zero();
+						deltaOrient[1].Zero();
 					}
 					else	// Contact normal is not in same direction as parent normal
 					{
@@ -530,8 +540,11 @@ void ContactResolver::ResolveInterpenetration3(ContactBatch* contactBatch, unsig
 					if(Abs(cg.node->contact.normal.DotProduct(cg.parentNormal)) == gFloat(1.0f))
 					{
 						deltaPos[0] -= cg.node->contact.normal * pen;
-						deltaOrient[0] = cg.parentNormal * deltaOrient[0].DotProduct(cg.parentNormal);
-						deltaOrient[1] = cg.parentNormal * deltaOrient[1].DotProduct(cg.parentNormal);
+						//deltaOrient[0] = cg.parentNormal * deltaOrient[0].DotProduct(cg.parentNormal);
+						//deltaOrient[1] = cg.parentNormal * deltaOrient[1].DotProduct(cg.parentNormal);
+						// 6/5/16
+						deltaOrient[0].Zero();
+						deltaOrient[1].Zero();
 					}
 					else
 					{
@@ -554,6 +567,11 @@ void ContactResolver::ResolveInterpenetration3(ContactBatch* contactBatch, unsig
 			resolutions[cg.node->contact.b2].deltaPos += deltaPos[1];
 			resolutions[cg.node->contact.b1].deltaOrient += deltaOrient[0];
 			resolutions[cg.node->contact.b2].deltaOrient += deltaOrient[1];
+			if(deltaOrient[0] != Vector() || deltaOrient[1] != Vector())
+			{
+				int x = 5;
+				x++;
+			}
 		}
 
 		// ~~~~ END ~~~~
@@ -562,6 +580,8 @@ void ContactResolver::ResolveInterpenetration3(ContactBatch* contactBatch, unsig
 		{
 			if(iter->first->GetInverseMass() == gFloat(0.0f))
 				continue;
+			//TRACE("Object %i Linear Move: (%f, %f, %f)\n", iter->first->GetID(), iter->second.deltaPos.x,iter->second.deltaPos.y,iter->second.deltaPos.z);
+			TRACE("Object %i Angular Move: (%f, %f, %f)\n", iter->first->GetID(), iter->second.deltaOrient.x,iter->second.deltaOrient.y,iter->second.deltaOrient.z);
 			iter->first->ForceAddPosition(iter->second.deltaPos);
 			iter->first->ForceAddOrientation(iter->second.deltaOrient);
 

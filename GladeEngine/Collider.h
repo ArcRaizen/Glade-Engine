@@ -11,6 +11,7 @@
 #endif
 #include "Math\AABB.h"
 #include <vector>
+#include <set>
 
 #define TRACK_MASS	1	// Should an Collider's/Object's mass be kept/tracked, or only its inverse mass?
 
@@ -31,9 +32,9 @@ class CollisionTests;
 class Collider
 {
 public:
-	enum class ColliderShape { SPHERE=0, BOX=1, CYLINDER=2, CONE=3, CAPSULE=4, PLANE=5, MESH=6 };
+	enum class ColliderShape { SPHERE=0, BOX=1, CAPSULE=2, CONE=3, CYLINDER=4, PLANE=5, MESH=6 };
 
-	Collider(RigidBody* rb, ColliderShape cs, PhysicMaterial* m, gFloat iMass, Matrix off, int mask) : attachedBody(rb), shape(cs), physicMaterial(m), inverseMass(iMass), offset(off), collisionMask(mask), enabled(true) 
+	Collider(RigidBody* rb, ColliderShape cs, PhysicMaterial* m, gFloat iMass, Matrix off, int mask) : attachedBody(rb), shape(cs), physicMaterial(m), inverseMass(iMass), offset(off), collisionMask(mask), collisionType(1), enabled(true) 
 #ifdef TRACK_MASS
 																					, mass(iMass == 0 ? G_MAX : ((gFloat)1.0) / iMass)
 #endif
@@ -41,6 +42,17 @@ public:
 
 	// Calculate complete transformation matrix for this Collider and pre-computer & save any derived geometric data
 	virtual void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform) { transform = attachedParentTransform * offset; position = Vector(transform(3,0), transform(3,1), transform(3,2)); }
+
+	// Return point on Collider farthest in direction 'd'
+	// Support function for GJK Collision Detection algorithm
+	virtual Vector GetSupportPoint(const Vector& d) = 0;
+	
+	// Since Collider's will not be at the origin with no rotation, GetSupportPoint needs to account for the Collider's Affine Transformation
+	// Given an Affine Transformation defined as "T(x) = Rx + c" with 'R' being a rotation matrix and 'c' being a translation vector,
+	// and the function to calculate a support point 'S()' The new equation for getting the support point of a transformed collider is:
+	//				"GetSupportPointTransform(d)  = T(S(R^t * d))"
+	// This function returns R^t * d so GetSupportPoint can perform T(S(CalcTransformedDirectionVector(d)))
+	Vector CalcTransformedDirectionVector(const Vector& d) { return transform.Transpose3Times(d); }
 
 	// Return ColliderShape of this Collider
 	ColliderShape GetShape() const { return shape; }
@@ -79,6 +91,15 @@ public:
 	// Remove collision group(s) from Collision Mask
 	void RemoveCollisionMask(int m) { collisionMask &= ~m; }
 
+	// Add collision group(s) to Collision Type
+	void AddCollisionType(int t) { collisionType |= t; }
+
+	// Remove collision groups(s) from Collision Type
+	void RemoveCollisionType(int t) { collisionType &= ~t; }
+
+	// Return Collision Type of Collider
+	int GetCollisionType() { return collisionType; }
+
 	// Enable/Disable Collider
 	void Enable() { enabled = true; }
 	void Disable() { enabled = false; }
@@ -88,7 +109,6 @@ public:
 	AABB GetBounds() { return bounds; }
 
 //  Vector ClosestPointOnBounds(Vector p);	// return closest point on bounds to p
-//  bool Raycast();							// test raycast against collider
 
 	friend class CollisionTests;
 
@@ -103,7 +123,9 @@ protected:
 	Matrix			transform;
 	Matrix			inertiaTensor;
 	Vector			position;
-	int				collisionMask;
+	int				collisionMask;	// Defines what the Collider can be hit by.
+	int				collisionType;	// Defines what the Collider "is." 
+									//	Can collide with other Collider's who's Collision Mask matches this
 
 	bool			enabled;
 //	bool			isTrigger;
@@ -130,6 +152,11 @@ public:
 		Vector radiusVec(radius, radius, radius);
 		bounds.maximum = position + radiusVec;
 		bounds.minimum = position - radiusVec;
+	}
+
+	Vector GetSupportPoint(const Vector& d)
+	{
+		return (d * radius) + position;
 	}
 
 protected:
@@ -184,11 +211,74 @@ public:
 			else if(vertices[i].z < bounds.minimum.z) bounds.minimum.z = vertices[i].z;
 		}
 	}
+
+
+	Vector GetSupportPoint(const Vector& d)
+	{
+		Vector dir = CalcTransformedDirectionVector(d);
+		return Vector(Sign(dir.x) * halfWidths.x, 
+						Sign(dir.y) * halfWidths.y, 
+						Sign(dir.z) * halfWidths.z) * transform;
+	}
 protected:
 	Vector halfWidths;	// halfwidths of box along the x-, y-, and z- axes
 
 	// Derived data
 	Vector u[3];
+};
+
+class CapsuleCollider : public Collider
+{
+public:
+	CapsuleCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CAPSULE, m, iMass, offset, mask), radius(rad), height(h)
+	{
+		inertiaTensor = Matrix::CapsuleInertiaTensor((gFloat)1.0f / iMass, h, rad);
+	}
+	friend class CollisionTests;
+
+	void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform)
+	{
+		Collider::CalcTransformAndDerivedGeometricData(attachedParentTransform);
+
+		// Calc 'p' and 'q' - center of top and bottom of inner cylinder and center of Sphere caps
+		p = position + transform.Times3(Vector(0.0f, -height/2.0f, 0.0f));
+		q = position + transform.Times3(Vector(0.0f, height/2.0f, 0.0f));
+		axis = (q-p).Normalized();
+
+		// Calc AABB (actually the the AABB of both Sphere caps)
+		Vector radiusVec(radius, radius, radius);
+		AABB b1(p - radiusVec, p + radiusVec),
+			b2(q - radiusVec, q + radiusVec);
+
+		// Combine into one AABB
+		bounds = b1;
+		if(b2.maximum.x > bounds.maximum.x) bounds.maximum.x = b2.maximum.x;
+		else /*if(b2.min.x < bounds.min.x)*/ bounds.minimum.x = b2.minimum.x;
+		if(b2.maximum.y > bounds.maximum.y) bounds.maximum.y = b2.maximum.y;
+		else /*if(b2.min.y < bounds.min.y)*/ bounds.minimum.y = b2.minimum.y;
+		if(b2.maximum.z > bounds.maximum.z) bounds.maximum.z = b2.maximum.z;
+		else /*if(b2.min.z < bounds.min.z)*/ bounds.minimum.z = b2.minimum.z;
+		bounds.CalcCenter();
+	}
+
+	Vector GetSupportPoint(const Vector& d)
+	{
+		Vector dir = CalcTransformedDirectionVector(d);
+		Vector r = dir * radius;
+		if(dir.y > gFloat(0.0f))
+			return r + p;
+		if(dir.y < gFloat(0.0f))
+			return r + q;
+		return r + position;
+	}
+protected:
+	gFloat radius;		// radius of 2 half-sphere's on ends of capsule
+	gFloat height;		// height of cylinder portion
+
+	// Derived Data
+	Vector p, q;
+	Vector axis;
+
 };
 
 /* Assume cylinder default orientation is:
@@ -237,6 +327,23 @@ public:
 		bounds.CalcCenter();
 
 	}
+
+	Vector GetSupportPoint(const Vector& d)
+	{
+		Vector dir = CalcTransformedDirectionVector(d);
+		gFloat w = Sqrt(dir.x*dir.x + dir.z*dir.z);
+
+		if(w > 0)
+		{
+			gFloat a = radius / w;
+			return Vector(a*dir.x, 
+						(dir.y>0 ? gFloat(1.0f) : gFloat(-1.0f)) * height*gFloat(0.5f), 
+						a*dir.z) * transform;
+		}
+
+		if(dir.y > gFloat(0.0f))	return p;
+		else						return q;
+	}
 protected:
 	gFloat radius;
 	gFloat height;
@@ -252,7 +359,7 @@ protected:
    /  \
   /____\
 
-  Tip = (center + (0,1,0)*height) * transform
+  Tip = (center + (0,1,0)*height/2) * transform
   Axis = (0, -1, 0)
 */
 class ConeCollider : public Collider
@@ -269,7 +376,7 @@ public:
 		Collider::CalcTransformAndDerivedGeometricData(attachedParentTransform);
 
 		// Calc Tip of cone and it's rotational axis (from tip to center of base)
-		tip = position + transform.Times3(Vector(0.0f, height/2.0f, 0.0f));
+		tip = position + transform.Times3(Vector(0.0f, height * 0.5f, 0.0f));
 		axis = (position - tip).Normalized();
 
 		// Calculate AABB (same AABB as a Cylinder)
@@ -288,6 +395,22 @@ public:
 		bounds.maximum += v;
 		bounds.CalcCenter();
 	}
+
+	Vector GetSupportPoint(const Vector& d)
+	{
+		Vector dir = CalcTransformedDirectionVector(d);
+		if(tip.y > dir * Sin(theta))
+			return tip;
+		
+		gFloat w = Sqrt(dir.x*dir.x + dir.z * dir.z);
+		if(w > gFloat(0.0f))
+		{
+			gFloat a = radius / w;
+			return Vector(a * dir.x, -height * gFloat(0.5f), a * dir.z) * transform;
+		}
+
+		return tip + axis*height;
+	}
 protected:
 	gFloat radius;
 	gFloat height;
@@ -296,50 +419,6 @@ protected:
 	gFloat theta;	
 	Vector tip;
 	Vector axis;	// Normalized vector from tip to base
-};
-
-
-class CapsuleCollider : public Collider
-{
-public:
-	CapsuleCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CAPSULE, m, iMass, offset, mask), radius(rad), height(h)
-	{
-		inertiaTensor = Matrix::CapsuleInertiaTensor((gFloat)1.0f / iMass, h, rad);
-	}
-	friend class CollisionTests;
-
-	void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform)
-	{
-		Collider::CalcTransformAndDerivedGeometricData(attachedParentTransform);
-
-		// Calc 'p' and 'q' - center of top and bottom of inner cylinder and center of Sphere caps
-		p = position + transform.Times3(Vector(0.0f, -height/2.0f, 0.0f));
-		q = position + transform.Times3(Vector(0.0f, height/2.0f, 0.0f));
-		axis = (q-p).Normalized();
-
-		// Calc AABB (actually the the AABB of both Sphere caps)
-		Vector radiusVec(radius, radius, radius);
-		AABB b1(p - radiusVec, p + radiusVec),
-			b2(q - radiusVec, q + radiusVec);
-
-		// Combine into one AABB
-		bounds = b1;
-		if(b2.maximum.x > bounds.maximum.x) bounds.maximum.x = b2.maximum.x;
-		else /*if(b2.min.x < bounds.min.x)*/ bounds.minimum.x = b2.minimum.x;
-		if(b2.maximum.y > bounds.maximum.y) bounds.maximum.y = b2.maximum.y;
-		else /*if(b2.min.y < bounds.min.y)*/ bounds.minimum.y = b2.minimum.y;
-		if(b2.maximum.z > bounds.maximum.z) bounds.maximum.z = b2.maximum.z;
-		else /*if(b2.min.z < bounds.min.z)*/ bounds.minimum.z = b2.minimum.z;
-		bounds.CalcCenter();
-	}
-protected:
-	gFloat radius;		// radius of 2 half-sphere's on ends of capsule
-	gFloat height;		// height of cylinder portion
-
-	// Derived Data
-	Vector p, q;
-	Vector axis;
-
 };
 
 class PlaneCollider : public Collider
@@ -355,6 +434,8 @@ public:
 	// A plane cannot have an AABB, so one is never calculated.
 	void CalcTransformAndDerivedGeometricData(Matrix attachedParentTransform) { return;	}
 
+	Vector GetSupportPoint(const Vector& d) { assert(false); return Vector(); }
+
 protected:
 	Vector normal;	// plane normal
 	gFloat d;		// distance from origin to plane
@@ -365,8 +446,32 @@ protected:
 class MeshCollider: public Collider
 {
 public:
-	MeshCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, int mask=1) : Collider(rb, ColliderShape::MESH, m, iMass, Matrix(), mask) { }
+	MeshCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, std::vector<Vector> verts, int mask=1) : Collider(rb, ColliderShape::MESH, m, iMass, Matrix(), mask) 
+	{
+		for(auto iter = verts.begin(); iter != verts.end(); ++iter)
+			vertices.insert(*iter);
+	}
 	friend class CollisionTests;
+
+	Vector GetSupportPoint(const Vector& d) 
+	{ 
+		Vector dir = CalcTransformedDirectionVector(d);
+		gFloat dist = G_MIN, dot;
+		Vector p;
+		for(auto iter = vertices.begin(); iter != vertices.end(); ++iter)
+		{
+			dot = dir.DotProduct(*iter);
+			if(dot > dist)
+			{
+				dist = dot;
+				p = *iter;
+			}
+		}
+		return p * transform; 
+	}
+
+protected:
+	std::set<Vector> vertices;
 };
 
 } // namespace Glade

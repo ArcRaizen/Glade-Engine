@@ -97,6 +97,7 @@
     <ClInclude Include="Math\Plane.h" />
     <ClInclude Include="Math\Precision.h" />
     <ClInclude Include="Math\Quaternion.h" />
+    <ClInclude Include="Math\Ray.h" />
     <ClInclude Include="Math\Vector.h" />
     <ClInclude Include="Object.h" />
     <ClInclude Include="Particle Contact Generators\ParticleCableContactGenerator.h" />
@@ -132,18 +133,19 @@
     <ClInclude Include="System\GeometryGenerator.h" />
     <ClInclude Include="System\Graphics\DebugDraw.h" />
     <ClInclude Include="System\Graphics\Direct3D.h" />
+    <ClInclude Include="System\Graphics\FontDraw.h" />
     <ClInclude Include="System\Graphics\GraphicsLocator.h" />
     <ClInclude Include="System\Graphics\Vertex.h" />
     <ClInclude Include="System\Input.h" />
     <ClInclude Include="System\KeyCodes.h" />
     <ClInclude Include="System\Octree\Octnode.h" />
     <ClInclude Include="System\Octree\Octree.h" />
+    <ClInclude Include="System\Timer.h" />
     <ClInclude Include="Utils\Assert.h" />
     <ClInclude Include="Utils\SmartPointer\ReferenceCounter.h" />
     <ClInclude Include="Utils\SmartPointer\SmartPointer.h" />
     <ClInclude Include="Utils\SmartPointer\StrongWeakCount.h" />
     <ClInclude Include="Utils\SmartPointer\WeakPointer.h" />
-    <ClInclude Include="Utils\Timer.h" />
     <ClInclude Include="Utils\Trace.h" />
     <ClInclude Include="Utils\Utils.h" />
     <ClInclude Include="World.h" />
@@ -185,12 +187,13 @@
     <ClCompile Include="System\GeometryGenerator.cpp" />
     <ClCompile Include="System\Graphics\DebugDraw.cpp" />
     <ClCompile Include="System\Graphics\Direct3D.cpp" />
+    <ClCompile Include="System\Graphics\FontDraw.cpp" />
     <ClCompile Include="System\Graphics\GraphicsLocator.cpp" />
     <ClCompile Include="System\Input.cpp" />
     <ClCompile Include="System\Octree\Octnode.cpp" />
     <ClCompile Include="System\Octree\Octree.cpp" />
+    <ClCompile Include="System\Timer.cpp" />
     <ClCompile Include="Utils\Assert.cpp" />
-    <ClCompile Include="Utils\Timer.cpp" />
     <ClCompile Include="Utils\Trace.cpp" />
     <ClCompile Include="World.cpp" />
   </ItemGroup>

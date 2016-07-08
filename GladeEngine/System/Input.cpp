@@ -132,9 +132,13 @@ void Input::UpdateAxes(gFloat dt)
 		bool neg = (iter->second.negativeKey < 260 && IsKeyDown(iter->second.negativeKey)) || 
 			(iter->second.altNegativeKey < 260 && IsKeyDown(iter->second.altNegativeKey));
 
+#ifdef AXIS_INPUT_SNAP
 		if(pos && neg)			// Both buttons pressed, snap to 0
 			iter->second.value = gFloat(0.0f);
 		else if(!pos && !neg)	// Neither button pressed, return to 0
+#else
+		if(pos == neg)	// Either both or neither buttons pressed, return to 0
+#endif
 		{
 			if(iter->second.value == gFloat(0.0f)) 
 				continue;
@@ -187,8 +191,8 @@ gFloat Input::GetAxis(std::string name)
 	return inputAxes[name].value;
 }
 
-// Get World Coordinates of the mouse
-D3DXVECTOR3 Input::GetMouseWorldCoords(HWND hWnd, D3DXVECTOR3 cameraPos)
+// Get picking ray from current mouse position
+Ray Input::GetMousePickRay(HWND hWnd, const Matrix& view, const Matrix& proj)
 {
 	// Get client(window) width and height
 	RECT clientRect;
@@ -200,10 +204,13 @@ D3DXVECTOR3 Input::GetMouseWorldCoords(HWND hWnd, D3DXVECTOR3 cameraPos)
 	ScreenToClient(hWnd, &cursorPos);
 
 	// Convert cursor coords to world coords using camera position
-	return D3DXVECTOR3(
-		(((cursorPos.x / clientRect.right) * screenWidth) - screenWidth/2) + cameraPos.x, 
-		(((cursorPos.y / clientRect.bottom) * screenHeight) + screenHeight/2) + cameraPos.y, 
-		0.0f);
+	Vector pos(
+		(((2.0f * cursorPos.x) / clientRect.right) - 1.0f) / proj(0,0), 
+		((((2.0f * cursorPos.y) / clientRect.bottom) -1.0f) * -1.0f) / proj(1,1),
+		1.0f);
+
+	Matrix vInv = view.Inverse4();
+	return Ray(Vector(vInv(3,0), vInv(3,1), vInv(3,2)), vInv.Times3(pos).Normalized());
 }
 
 // Get client coordinates of the mouse
