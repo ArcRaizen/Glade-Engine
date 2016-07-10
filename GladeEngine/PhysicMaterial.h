@@ -1,6 +1,6 @@
 #ifndef GLADE_PHYSIC_MATERIAL_H
 #define GLADE_PHYSIC_MATERIAL_H
-
+#include "System\Resource.h"
 #include "GladeConfig.h"
 #include "Math\MathMisc.h"
 #include "Math\Precision.h"
@@ -8,7 +8,7 @@
 
 namespace Glade {
 
-class PhysicMaterial
+class PhysicMaterial : public Resource<PhysicMaterial>
 {
 public:
 	// Describes how 2 material's that are colliding determine that collisions overall
@@ -16,8 +16,16 @@ public:
 	// The Largest option between the 2 Materials has precedence (Max,Mult,Min,GAvg,Avg)
 	enum class PhysicMaterialCombine { AVERAGE=0, GEOMETRIC_AVERAGE=1, PYTHAGOREAN=2, MINIMUM=3, MULTIPLY=4, MAXIMUM=5 };
 
-	PhysicMaterial(PhysicMaterialCombine bCombine, PhysicMaterialCombine fCombine, gFloat b, gFloat sMu, gFloat dMu=-1.0f) :
-		bouncinessCombine(bCombine), frictionCombine(fCombine), bounciness(b), staticFriction(sMu), dynamicFriction(dMu<0.0f ? sMu : dMu)
+	static SmartPointer<PhysicMaterial> CreateFromData(const std::string& name, PhysicMaterialCombine bCombine, PhysicMaterialCombine fCombine, gFloat b, gFloat sMu, gFloat dMu=-1.0f)
+	{
+		auto newMat = SmartPointer<PhysicMaterial>(new PhysicMaterial(name.length()>0? name : GenerateName("Unnamed PhysicMaterial %i"), bCombine, fCombine, b, sMu, dMu));
+		if(newMat) RegisterResource(newMat);
+		return newMat;
+	}
+
+protected:
+	PhysicMaterial(std::string& name, PhysicMaterialCombine bCombine, PhysicMaterialCombine fCombine, gFloat b, gFloat sMu, gFloat dMu=-1.0f) :
+		Resource(name), bouncinessCombine(bCombine), frictionCombine(fCombine), bounciness(b), staticFriction(sMu), dynamicFriction(dMu<0.0f ? sMu : dMu)
 	{
 		AssertMsg(b <= gFloat(1.0f) && b >= gFloat(0.0f), "Illegal value for Bounciness of PhysicMaterial: must be in range [0, 1]");
 		AssertMsg(sMu >= gFloat(0.0f), "Illegal value for Static Friction of PhysicMaterial: must not be negative");
@@ -25,7 +33,8 @@ public:
 		AssertMsg(sMu >= dMu, "Illegal values for Friction of PhysicMaterials: Dynamic Friction mus not be larger than Static Friction");
 	}
 
-	gFloat GetCombinedBounciness(const PhysicMaterial* m)
+public:
+	gFloat GetCombinedBounciness(const SmartPointer<PhysicMaterial> m)
 	{
 		switch(Max(bouncinessCombine, m->bouncinessCombine))
 		{
@@ -44,7 +53,7 @@ public:
 		}
 	}
 
-	gFloat GetCombinedStaticFriction(const PhysicMaterial* m)
+	gFloat GetCombinedStaticFriction(const SmartPointer<PhysicMaterial> m)
 	{
 		switch(Max(frictionCombine, m->frictionCombine))
 		{
@@ -63,7 +72,7 @@ public:
 		}
 	}
 
-	gFloat GetCombinedDynamicFriction(const PhysicMaterial* m)
+	gFloat GetCombinedDynamicFriction(const SmartPointer<PhysicMaterial> m)
 	{
 		switch(Max(frictionCombine, m->frictionCombine))
 		{
@@ -82,6 +91,7 @@ public:
 		}
 	}
 
+	template <typename T> friend class SmartPointer;
 private:
 	gFloat					bounciness;			// How bouncy is this material/collider? 0 = no bounce, 1 = perfectly elastic
 	PhysicMaterialCombine	bouncinessCombine;	// How bounciness is combined
@@ -89,6 +99,8 @@ private:
 	gFloat					staticFriction;		// Friction coefficient when Obejcts are barely moving against each other
 	gFloat					dynamicFriction;	// Friction coefficient when Objects are already moving
 	PhysicMaterialCombine	frictionCombine;	// How friction is combined
+
+//	static constexpr const char* autoNameFormat = "Unnamed PhysicMaterial %i";
 };
 }
 #endif	// GLADE_PHYSIC_MATERIAL_H

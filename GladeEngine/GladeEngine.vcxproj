@@ -140,6 +140,7 @@
     <ClInclude Include="System\KeyCodes.h" />
     <ClInclude Include="System\Octree\Octnode.h" />
     <ClInclude Include="System\Octree\Octree.h" />
+    <ClInclude Include="System\Resource.h" />
     <ClInclude Include="System\Timer.h" />
     <ClInclude Include="Utils\Assert.h" />
     <ClInclude Include="Utils\SmartPointer\ReferenceCounter.h" />
@@ -192,6 +193,7 @@
     <ClCompile Include="System\Input.cpp" />
     <ClCompile Include="System\Octree\Octnode.cpp" />
     <ClCompile Include="System\Octree\Octree.cpp" />
+    <ClCompile Include="System\Resource.cpp" />
     <ClCompile Include="System\Timer.cpp" />
     <ClCompile Include="Utils\Assert.cpp" />
     <ClCompile Include="Utils\Trace.cpp" />

@@ -10,6 +10,7 @@
 #include "Math\Matrix.h"
 #endif
 #include "Math\AABB.h"
+#include "Utils\SmartPointer\SmartPointer.h"
 #include <vector>
 #include <set>
 
@@ -34,7 +35,7 @@ class Collider
 public:
 	enum class ColliderShape { SPHERE=0, BOX=1, CAPSULE=2, CONE=3, CYLINDER=4, PLANE=5, MESH=6 };
 
-	Collider(RigidBody* rb, ColliderShape cs, PhysicMaterial* m, gFloat iMass, Matrix off, int mask) : attachedBody(rb), shape(cs), physicMaterial(m), inverseMass(iMass), offset(off), collisionMask(mask), collisionType(1), enabled(true) 
+	Collider(RigidBody* rb, ColliderShape cs, SmartPointer<PhysicMaterial> m, gFloat iMass, Matrix off, int mask) : attachedBody(rb), shape(cs), physicMaterial(m), inverseMass(iMass), offset(off), collisionMask(mask), collisionType(1), enabled(true) 
 #ifdef TRACK_MASS
 																					, mass(iMass == 0 ? G_MAX : ((gFloat)1.0) / iMass)
 #endif
@@ -114,7 +115,7 @@ public:
 
 protected:
 	ColliderShape	shape;
-	PhysicMaterial*	physicMaterial;
+	SmartPointer<PhysicMaterial>	physicMaterial;
 	gFloat			inverseMass;
 #ifdef TRACK_MASS
 	gFloat			mass;
@@ -136,7 +137,7 @@ protected:
 class SphereCollider : public Collider
 {
 public:
-	SphereCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::SPHERE, m, iMass, offset, mask), radius(rad)
+	SphereCollider(RigidBody* rb, SmartPointer<PhysicMaterial> m, gFloat iMass, gFloat rad, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::SPHERE, m, iMass, offset, mask), radius(rad)
 	{
 		inertiaTensor = Matrix::SphereInertiaTensor((gFloat)1.0f / iMass, rad);
 	}
@@ -166,7 +167,7 @@ protected:
 class BoxCollider : public Collider
 {
 public:
-	BoxCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, Vector halfW, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::BOX, m, iMass, offset, mask), halfWidths(halfW)
+	BoxCollider(RigidBody* rb, SmartPointer<PhysicMaterial> m, gFloat iMass, Vector halfW, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::BOX, m, iMass, offset, mask), halfWidths(halfW)
 	{
 		if(iMass == gFloat(0.0f))
 			inertiaTensor = Matrix::INFINITE_MASS_INERTIA_TENSOR;
@@ -230,7 +231,7 @@ protected:
 class CapsuleCollider : public Collider
 {
 public:
-	CapsuleCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CAPSULE, m, iMass, offset, mask), radius(rad), height(h)
+	CapsuleCollider(RigidBody* rb, SmartPointer<PhysicMaterial> m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CAPSULE, m, iMass, offset, mask), radius(rad), height(h)
 	{
 		inertiaTensor = Matrix::CapsuleInertiaTensor((gFloat)1.0f / iMass, h, rad);
 	}
@@ -295,7 +296,7 @@ protected:
 class CylinderCollider : public Collider
 {
 public:
-	CylinderCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CYLINDER, m, iMass, offset, mask), radius(rad), height(h)
+	CylinderCollider(RigidBody* rb, SmartPointer<PhysicMaterial> m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CYLINDER, m, iMass, offset, mask), radius(rad), height(h)
 	{
 		inertiaTensor = Matrix::CylinderInertiaTensor((gFloat)1.0f / iMass, h, rad);
 	}
@@ -365,7 +366,7 @@ protected:
 class ConeCollider : public Collider
 {
 public:
-	ConeCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CONE, m, iMass, offset, mask), radius(rad), height(h), theta(ATan(radius/height))
+	ConeCollider(RigidBody* rb, SmartPointer<PhysicMaterial> m, gFloat iMass, gFloat rad, gFloat h, Matrix offset=Matrix(), int mask=1) : Collider(rb, ColliderShape::CONE, m, iMass, offset, mask), radius(rad), height(h), theta(ATan(radius/height))
 	{
 		inertiaTensor = Matrix::ConeInertiaTensor((gFloat)1.0f / iMass, h, rad);
 	}
@@ -426,7 +427,7 @@ class PlaneCollider : public Collider
 public:
 	// Width and Height - assume the plane is the floor with its normal pointing straight up the Y-axis. Width goes down the X-axis and height the Z-axis
 		// If the plane is a wall with the normal pointing straight at you, Width goes sideways, height goes up/down
-	PlaneCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, Vector n, gFloat _d, gFloat w, gFloat h, int mask=1) : Collider(rb, ColliderShape::PLANE, m, iMass, Matrix(), mask), normal(n), d(_d), width(w), height(h) { }
+	PlaneCollider(RigidBody* rb, SmartPointer<PhysicMaterial> m, gFloat iMass, Vector n, gFloat _d, gFloat w, gFloat h, int mask=1) : Collider(rb, ColliderShape::PLANE, m, iMass, Matrix(), mask), normal(n), d(_d), width(w), height(h) { }
 	friend class CollisionTests;
 
 	// Plane collider unique. It never updates after initial creation, because anything that has a Plane collider shound not move...ever!
@@ -446,7 +447,7 @@ protected:
 class MeshCollider: public Collider
 {
 public:
-	MeshCollider(RigidBody* rb, PhysicMaterial* m, gFloat iMass, std::vector<Vector> verts, int mask=1) : Collider(rb, ColliderShape::MESH, m, iMass, Matrix(), mask) 
+	MeshCollider(RigidBody* rb, SmartPointer<PhysicMaterial> m, gFloat iMass, std::vector<Vector> verts, int mask=1) : Collider(rb, ColliderShape::MESH, m, iMass, Matrix(), mask) 
 	{
 		for(auto iter = verts.begin(); iter != verts.end(); ++iter)
 			vertices.insert(*iter);

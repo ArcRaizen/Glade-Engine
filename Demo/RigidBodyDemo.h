@@ -18,7 +18,6 @@ private:
 	Matrix baseView, ortho;
 	RigidBody* box, *plane;
 	RigidBody* box2, *box3;
-	PhysicMaterial* boxMaterial, *planeMaterial;
 	World* world;
 };
 

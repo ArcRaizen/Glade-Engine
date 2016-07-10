@@ -13,9 +13,9 @@ bool RigidBodyDemo::Initialize()
 	ortho = Matrix::Ortho(1280, 720, 1, 1000);
 
 	typedef PhysicMaterial::PhysicMaterialCombine MaterialCombine;
-	boxMaterial = new PhysicMaterial(MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN, 
+	auto boxMaterial = PhysicMaterial::CreateFromData(std::string("Box Material"), MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN, 
 		0.4f, 0.1f, 0.1f);
-	planeMaterial = new PhysicMaterial(MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN,
+	auto planeMaterial = PhysicMaterial::CreateFromData(std::string("Plane Material"), MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN,
 		0.4f, 0.5f, 0.4f);
 
 	MeshData* boxMesh = GeometryGenerator::CreateBox(4, 4, 4, "box.png");
@@ -25,7 +25,7 @@ bool RigidBodyDemo::Initialize()
 	gFloat boxInvMass = 0.2f;
 	gFloat planeInvMass = 0.00f;
 	box = new RigidBody(Vector(-3,12.5,10), Quaternion(0,0,-00*DEG2RAD), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
-	box->AddCollider(new BoxCollider(box, boxMaterial, boxInvMass, Vector(2,2,2)));
+	box->AddCollider(new BoxCollider(box, PhysicMaterial::FindResourceByName("Box Material"), boxInvMass, Vector(2,2,2)));
 	//box->AddCollider(new SphereCollider(box, boxInvMass, 2));
 	box->LoadMesh(boxMesh);
 	box->AllowSetVelocity();
@@ -68,8 +68,6 @@ bool RigidBodyDemo::Initialize()
 
 RigidBodyDemo::~RigidBodyDemo()
 {
-	delete boxMaterial;
-	delete planeMaterial;
 }
 
 bool RigidBodyDemo::Update(float dt)

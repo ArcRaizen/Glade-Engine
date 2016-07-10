@@ -246,6 +246,9 @@
     <ClInclude Include="System\Graphics\FontDraw.h">
       <Filter>System\Graphics</Filter>
     </ClInclude>
+    <ClInclude Include="System\Resource.h">
+      <Filter>System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Particle.cpp">
@@ -382,6 +385,9 @@
     </ClCompile>
     <ClCompile Include="System\Graphics\FontDraw.cpp">
       <Filter>System\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Resource.cpp">
+      <Filter>System</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

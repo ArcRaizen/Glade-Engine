@@ -3,6 +3,7 @@
 
 #include "StrongWeakCount.h"
 #include <algorithm>
+#include <assert.h>
 
 namespace Glade {
 
@@ -54,14 +55,14 @@ public:
 	// Constructor when casting a non-nullptr up an inheritance line
 	// Essentially creating a SmartPointer<T> from a SmartPointer<Y>/WeakPointer<Y> where Y inherits from T
 	template <typename Y> SmartPointer(const WeakPointer<Y>& y) : sc(y.wc) { t = y.t; }
-	template <typename Y> SmartPointer(const SmartPointer<Y>& y) : sc(y.sc) { t = y.t; }
-/*	template <typename Y> SmartPointer(const SmartPointer<Y>& y)
+//	template <typename Y> SmartPointer(const SmartPointer<Y>& y) : sc(y.sc) { t = y.t; }
+	template <typename Y> SmartPointer(const SmartPointer<Y>& y)
 	{
 		(void)static_cast<T*>(static_cast<Y*>(0));
 		t = static_cast<T*>(y.GetPointer());
 		assert(t != nullptr);
 		sc = y.sc;
-	}*/
+	}
 
 	// Copy Constructor
 	// Initialize the pointer and increase count
@@ -86,6 +87,17 @@ public:
 		// *this now holds the contents of 'u'
 		SmartPointer<T>(u).Swap(*this);
 		return *this;
+	}
+
+	// Return whether the stored pointer is a null pointer.
+	operator bool() const
+	{
+		return t != nullptr;
+	}
+
+	bool operator!() const
+	{
+		return t == nullptr;
 	}
 
 	// Get the actual pointer managed by this SmartPointer
