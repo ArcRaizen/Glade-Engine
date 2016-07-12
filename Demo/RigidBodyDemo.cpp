@@ -13,14 +13,14 @@ bool RigidBodyDemo::Initialize()
 	ortho = Matrix::Ortho(1280, 720, 1, 1000);
 
 	typedef PhysicMaterial::PhysicMaterialCombine MaterialCombine;
-	auto boxMaterial = PhysicMaterial::CreateFromData(std::string("Box Material"), MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN, 
+	auto boxMaterial = PhysicMaterial::CreateFromData(std::string("Box Material"), false, MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN, 
 		0.4f, 0.1f, 0.1f);
-	auto planeMaterial = PhysicMaterial::CreateFromData(std::string("Plane Material"), MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN,
+	auto planeMaterial = PhysicMaterial::CreateFromData(std::string("Plane Material"), false, MaterialCombine::GEOMETRIC_AVERAGE, MaterialCombine::PYTHAGOREAN,
 		0.4f, 0.5f, 0.4f);
 
-	MeshData* boxMesh = GeometryGenerator::CreateBox(4, 4, 4, "box.png");
-	MeshData* cylinderMesh = GeometryGenerator::CreateCylinder(2, 5, 16, 1, "checkerboardsmall.png");
-	MeshData* planeMesh = GeometryGenerator::CreateBox(20, 2, 20, "box.png");
+	auto boxMesh = MeshData::CreateBox("Default Box", false, 4, 4, 4, "box.png");
+	auto cylinderMesh = MeshData::CreateCylinder("Cylinder", false, 2, 5, 16, 1, "checkerboardsmall.png");
+	auto planeMesh = MeshData::CreateBox("Plane", true, 20, 2, 20, "box.png");
 
 	gFloat boxInvMass = 0.2f;
 	gFloat planeInvMass = 0.00f;
@@ -31,7 +31,7 @@ bool RigidBodyDemo::Initialize()
 	box->AllowSetVelocity();
 	box->SetAwake(true);
 
-	box2 = new RigidBody(Vector(-2.9,50,10), Quaternion(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
+	box2 = new RigidBody(Vector(-2.9,20,10), Quaternion(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
 	box2->AddCollider(new BoxCollider(box2, boxMaterial, boxInvMass, Vector(2,2,2)));
 	box2->LoadMesh(boxMesh);
 	box2->SetAwake(false);
@@ -53,10 +53,6 @@ bool RigidBodyDemo::Initialize()
 	world->AddRigidBody(box2);
 	world->AddRigidBody(box3);
 	world->AddRigidBody(plane);
-
-	delete boxMesh;
-	delete cylinderMesh;
-	delete planeMesh;
 
 //	camera->SetWatchTarget(box, Vector(0,0,0));
 

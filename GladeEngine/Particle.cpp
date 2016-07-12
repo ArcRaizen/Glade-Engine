@@ -11,7 +11,7 @@ Particle::Particle() : Object(Vector(), Vector(), 0.01, 1, false), motion(30.0f)
 {
 	radius = 1;
 	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(
-		GeometryGenerator::CreateSphere(radius, 10, 10, "blank.png", PARTICLE_MESH_COLOR));
+		MeshData::CreateSphere("", false, radius, 10, 10, "blank.png", PARTICLE_MESH_COLOR));
 	highlightColor = PARTICLE_MESH_COLOR;
 	shaderResource->world = &transformationMatrix;
 	shaderResource->color = &highlightColor;
@@ -31,7 +31,7 @@ Particle::Particle(Vector pos, Vector vel, Vector accel, gFloat damp, gFloat rad
 {
 	radius = rad;
 	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(
-		GeometryGenerator::CreateSphere(radius, 10, 10, "blank.png", PARTICLE_MESH_COLOR));
+		MeshData::CreateSphere("", false, radius, 10, 10, "blank.png", PARTICLE_MESH_COLOR));
 	highlightColor = PARTICLE_MESH_COLOR;
 	shaderResource->world = &transformationMatrix;
 	shaderResource->color = &highlightColor;

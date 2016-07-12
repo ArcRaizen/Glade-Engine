@@ -16,10 +16,16 @@ public:
 	// The Largest option between the 2 Materials has precedence (Max,Mult,Min,GAvg,Avg)
 	enum class PhysicMaterialCombine { AVERAGE=0, GEOMETRIC_AVERAGE=1, PYTHAGOREAN=2, MINIMUM=3, MULTIPLY=4, MAXIMUM=5 };
 
-	static SmartPointer<PhysicMaterial> CreateFromData(const std::string& name, PhysicMaterialCombine bCombine, PhysicMaterialCombine fCombine, gFloat b, gFloat sMu, gFloat dMu=-1.0f)
+	static SmartPointer<PhysicMaterial> CreateFromData(const std::string& name, bool saveSmart, PhysicMaterialCombine bCombine, PhysicMaterialCombine fCombine, gFloat b, gFloat sMu, gFloat dMu=-1.0f)
 	{
 		auto newMat = SmartPointer<PhysicMaterial>(new PhysicMaterial(name.length()>0? name : GenerateName("Unnamed PhysicMaterial %i"), bCombine, fCombine, b, sMu, dMu));
-		if(newMat) RegisterResource(newMat);
+		if(newMat) 
+		{
+			if(saveSmart)
+				RegisterSmartResource(newMat);
+			else
+				RegisterWeakResource(newMat);
+		}
 		return newMat;
 	}
 

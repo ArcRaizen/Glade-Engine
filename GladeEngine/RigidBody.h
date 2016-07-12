@@ -32,8 +32,8 @@ public:
 
 	void AddCollider(Collider* collider);
 
-	void LoadMesh(MeshData* meshData);
-	void LoadMesh(const char* filename);
+	void LoadMesh(SmartPointer<MeshData> meshData);
+	void LoadMesh(std::string& meshName);
 
 	// Apply a force to this Rigid body...
 	void ApplyForceAtPoint(const Vector& f, const Vector& p);		// at another point in world space

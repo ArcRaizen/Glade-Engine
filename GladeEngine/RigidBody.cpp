@@ -266,16 +266,22 @@ void RigidBody::AddCollider(Collider* collider)
 	SetAwake(true);
 }
 
-void RigidBody::LoadMesh(MeshData* meshData)
+void RigidBody::LoadMesh(SmartPointer<MeshData> meshData)
 {
 	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(meshData);
-	highlightColor = meshData->color;
+	highlightColor = meshData->color;	// set hightlight color to default mesh color
 	shaderResource->world = &transformationMatrix;
 	shaderResource->color = &highlightColor;
 }
 
-void RigidBody::LoadMesh(const char* filename)
-{}
+void RigidBody::LoadMesh(std::string& meshName)
+{
+	SmartPointer<MeshData> md = MeshData::FindResourceByName(meshName);
+	shaderResource = GraphicsLocator::GetGraphics()->CreateBuffers(md);
+	highlightColor = md->color;		// set hightlight color to default mesh color
+	shaderResource->world = &transformationMatrix;
+	shaderResource->color = &highlightColor;
+}
 
 void RigidBody::ApplyForceAtPoint(const Vector& f, const Vector& p)
 {

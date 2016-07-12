@@ -3,6 +3,7 @@
 #include <vector>
 #include <D3dx10math.h>
 #pragma comment(lib, "d3dx9.lib")
+
 // Vertex struct for graphics drawing
 // Simple definition Pos (no texture)
 struct SVertexC
@@ -82,13 +83,5 @@ struct Vertex
 	D3DXVECTOR3 normal;
 	D3DXVECTOR3 tangent;
 	D3DXVECTOR2 texCoord;
-};
-
-struct MeshData
-{
-	std::vector<Vertex> vertices;
-	std::vector<unsigned int> indices;
-	std::string texFilename;
-	D3DXVECTOR4 color;
 };
 #endif	// GLADE_VERTEX_F

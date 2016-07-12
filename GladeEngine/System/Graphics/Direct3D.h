@@ -17,7 +17,7 @@
 #include <D3DX11async.h>
 #include "d3dx11effect.h"
 #include "../../Math/Matrix.h"
-#include "Vertex.h"
+#include "../GeometryGenerator.h"
 #include "../../Utils/SmartPointer/WeakPointer.h"
 #include <map>
 #include "../../Utils/Assert.h"
@@ -54,7 +54,7 @@ public:
 	void EndFrame();
 
 	// ~~~~ Management Functions ~~~~
-	ShaderResource* CreateBuffers(MeshData* meshData);
+	ShaderResource* CreateBuffers(SmartPointer<MeshData> meshData);
 	void SetRasterizerState(RasterState rs);
 	void SetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY top);
 	void EnableZBuffer();

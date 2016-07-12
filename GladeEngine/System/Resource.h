@@ -31,45 +31,76 @@ class Resource : public IResource
 {
 protected:
 	Resource(const std::string& name) : IResource(name) { }
-	virtual ~Resource() { UnregisterResource(GetName()); }
+	virtual ~Resource() { UnregisterWeakResource(GetName()); UnregisterSmartResource(GetName()); }
 	
-	static void RegisterResource(const SmartPointer<Resource>& ptr)
+	static void RegisterWeakResource(const SmartPointer<Resource>& ptr)
 	{
 		Assert(ptr);
 		const auto name = ptr->GetName();
-		AssertMsg(!resources.count(name), "Resource with name \"" + name + " already exists");
-		resources.emplace(name, ptr);
+		AssertMsg(!weakResources.count(name), "Weak Resource with name \"" + name + " already exists");
+		weakResources.emplace(name, ptr);
 	}
-	static void UnregisterResource(const std::string& name)
+	static void UnregisterWeakResource(const std::string& name)
 	{
-		auto find = resources.find(name);
-		if(find != resources.end())
-			resources.erase(find);
+		if(weakResources.size() == 0) return;
+		auto find = weakResources.find(name);
+		if(find != weakResources.end())
+			weakResources.erase(find);
+	}
+
+	static void RegisterSmartResource(const SmartPointer<Resource>& ptr)
+	{
+		Assert(ptr);
+		const auto name = ptr->GetName();
+		AssertMsg(!smartResources.count(name), "Smart Resource with name \"" + name + " already exists");
+		smartResources.emplace(name, ptr);
+	}
+	static void UnregisterSmartResource(const std::string& name)
+	{
+		if(smartResources.size() == 0) return;
+		auto find = smartResources.find(name);
+		if(find != smartResources.end())
+			smartResources.erase(find);
 	}
 
 public:
 	static SmartPointer<T> FindResourceByName(const std::string& name)
 	{
-		auto find = resources.find(name);
-		if(find == resources.end())
+		auto find = smartResources.find(name);
+		if(find != smartResources.end())
+			return find->second;
+
+		auto find2 = weakResources.find(name);
+		if(find2 == weakResources.end())
 			return nullptr;
-		return find->second.Lock();
+		return find2->second.Lock();
 	}
 
-	static bool CanFindResourceByName(const std::string& name)
+	static bool CanFindWeakResourceByName(const std::string& name)
 	{
-		auto find = resources.find(name);
-		if(find == resources.end())
+		auto find = weakResources.find(name);
+		if(find == weakResources.end())
 			return false;
 		return true;
 	}
 
+	static bool CanFindSmartResourceByName(const std::string& name)
+	{
+		auto find = smartResources.find(name);
+		if(find == smartResources.end())
+			return false;
+		return true;
+	}
 private:
-	static std::unordered_map<std::string, WeakPointer<Resource>> resources;
+	static std::unordered_map<std::string, WeakPointer<Resource>> weakResources;
+	static std::unordered_map<std::string, SmartPointer<Resource>> smartResources;
 };
 
 template <typename T>
-std::unordered_map<std::string, WeakPointer<Resource<T>>> Resource<T>::resources; 
+std::unordered_map<std::string, WeakPointer<Resource<T>>> Resource<T>::weakResources;
+
+template <typename T>
+std::unordered_map<std::string, SmartPointer<Resource<T>>> Resource<T>::smartResources;
 }	// namespace
 #endif	// GLADE_RESOURCE_H
 

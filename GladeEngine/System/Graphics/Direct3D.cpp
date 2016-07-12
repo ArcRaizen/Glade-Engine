@@ -443,7 +443,7 @@ void Direct3D::Shutdown()
 	delete [] textureList;
 }
 
-Direct3D::ShaderResource* Direct3D::CreateBuffers(MeshData* meshData)
+Direct3D::ShaderResource* Direct3D::CreateBuffers(SmartPointer<MeshData> meshData)
 {
 	ID3D11Buffer* vb, *ib;
 

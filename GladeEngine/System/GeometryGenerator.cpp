@@ -2,85 +2,91 @@
 
 using namespace Glade;
 
-MeshData* GeometryGenerator::CreateBox(gFloat width, gFloat height, gFloat depth, std::string texFilename, D3DXVECTOR4 c)
+MeshData::MeshData(std::string& name, std::vector<Vertex> verts, std::vector<unsigned int> inds, std::string& filename, D3DXVECTOR4 c) : 
+			Resource(name), vertices(verts), indices(inds), texFilename(filename), color(c)
+{ }
+
+SmartPointer<MeshData> MeshData::CreateBox(const std::string& name, bool saveSmart, gFloat width, gFloat height, gFloat depth, std::string texFilename, D3DXVECTOR4 c)
 {
-	MeshData* meshData = new MeshData;
-	Vertex v[24];
+	std::vector<Vertex> v;
 	gFloat w2 = width * gFloat(0.5f);
 	gFloat h2 = height * gFloat(0.5f);
 	gFloat d2 = depth * gFloat(0.5f);
 
 	// Front face
-	v[0] = Vertex(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[1] = Vertex(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[2] = Vertex(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	v[3] = Vertex(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v.emplace_back(-w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v.emplace_back(-w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v.emplace_back(+w2, +h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v.emplace_back(+w2, -h2, -d2, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 	// Back face
-	v[4] = Vertex(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-	v[5] = Vertex(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[6] = Vertex(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[7] = Vertex(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v.emplace_back(-w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v.emplace_back(+w2, -h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v.emplace_back(+w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v.emplace_back(-w2, +h2, +d2, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 	// Top face
-	v[8]  = Vertex(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[9]  = Vertex(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[10] = Vertex(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-	v[11] = Vertex(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v.emplace_back(-w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v.emplace_back(-w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v.emplace_back(+w2, +h2, +d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v.emplace_back(+w2, +h2, -d2, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
 	// Bottom face
-	v[12] = Vertex(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
-	v[13] = Vertex(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	v[14] = Vertex(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-	v[15] = Vertex(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+	v.emplace_back(-w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+	v.emplace_back(+w2, -h2, -d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+	v.emplace_back(+w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+	v.emplace_back(-w2, -h2, +d2, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 	// Left face
-	v[16] = Vertex(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
-	v[17] = Vertex(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
-	v[18] = Vertex(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
-	v[19] = Vertex(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
+	v.emplace_back(-w2, -h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f);
+	v.emplace_back(-w2, +h2, +d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f);
+	v.emplace_back(-w2, +h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
+	v.emplace_back(-w2, -h2, -d2, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f);
 	// Right face
-	v[20] = Vertex(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
-	v[21] = Vertex(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-	v[22] = Vertex(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
-	v[23] = Vertex(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
+	v.emplace_back(+w2, -h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f);
+	v.emplace_back(+w2, +h2, -d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+	v.emplace_back(+w2, +h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+	v.emplace_back(+w2, -h2, +d2, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f);
 
-	meshData->vertices.assign(&v[0], &v[24]);
-
-	unsigned int i[36];
+	std::vector<unsigned int> i;
 
 	// Fill in the front face index data
-	i[0] = 0; i[1] = 1; i[2] = 2;
-	i[3] = 0; i[4] = 2; i[5] = 3;
+	i.push_back(0); i.push_back(1); i.push_back(2);
+	i.push_back(0); i.push_back(2); i.push_back(3);
 
 	// Fill in the back face index data
-	i[6] = 4; i[7]  = 5; i[8]  = 6;
-	i[9] = 4; i[10] = 6; i[11] = 7;
+	i.push_back(4); i.push_back(5); i.push_back(6);
+	i.push_back(4); i.push_back(6); i.push_back(7);
 
 	// Fill in the top face index data
-	i[12] = 8; i[13] =  9; i[14] = 10;
-	i[15] = 8; i[16] = 10; i[17] = 11;
+	i.push_back(8); i.push_back(9); i.push_back(10);
+	i.push_back(8); i.push_back(10); i.push_back(11);
 
 	// Fill in the bottom face index data
-	i[18] = 12; i[19] = 13; i[20] = 14;
-	i[21] = 12; i[22] = 14; i[23] = 15;
+	i.push_back(12); i.push_back(13); i.push_back(14);
+	i.push_back(12); i.push_back(14); i.push_back(15);
 
 	// Fill in the left face index data
-	i[24] = 16; i[25] = 17; i[26] = 18;
-	i[27] = 16; i[28] = 18; i[29] = 19;
+	i.push_back(16); i.push_back(17); i.push_back(18);
+	i.push_back(16); i.push_back(18); i.push_back(19);
 
 	// Fill in the right face index data
-	i[30] = 20; i[31] = 21; i[32] = 22;
-	i[33] = 20; i[34] = 22; i[35] = 23;
+	i.push_back(20); i.push_back(21); i.push_back(22);
+	i.push_back(20); i.push_back(22); i.push_back(23);
 
-	meshData->indices.assign(&i[0], &i[36]);
-	meshData->texFilename = "../GladeEngine/Textures/" + texFilename;
-	meshData->color = c;
-	return meshData;
+	auto newMesh = SmartPointer<MeshData>(new MeshData(name.length()>0? name : GenerateName("Unnamed MeshData %i"), v, i, "../GladeEngine/Textures/" + texFilename, c));
+	if(newMesh) 
+	{
+		if(saveSmart)
+			RegisterSmartResource(newMesh);
+		else
+			RegisterWeakResource(newMesh);
+	}
+	return newMesh;
 }
 
-MeshData* GeometryGenerator::CreateSphere(gFloat radius, unsigned int sliceCount, unsigned int stackCount, std::string texFilename, D3DXVECTOR4 color)
+SmartPointer<MeshData> MeshData::CreateSphere(const std::string& name, bool saveSmart, gFloat radius, unsigned int sliceCount, unsigned int stackCount, std::string texFilename, D3DXVECTOR4 color)
 {
-	MeshData* meshData = new MeshData;
 	Vertex top(0.0f, radius, 0.0f, 0.0f, +1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 	Vertex bot(0.0f, -radius, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	meshData->vertices.push_back(top);
+	std::vector<Vertex> verts;
+	verts.push_back(top);
 
 	gFloat phiStep = PI / stackCount;
 	gFloat thetaStep = TWO_PI / sliceCount;
@@ -112,17 +118,18 @@ MeshData* GeometryGenerator::CreateSphere(gFloat radius, unsigned int sliceCount
 			v.texCoord.x = theta / TWO_PI;
 			v.texCoord.y = phi / PI;
 
-			meshData->vertices.push_back(v);
+			verts.push_back(v);
 		}
 	}
-	meshData->vertices.push_back(bot);
+	verts.push_back(bot);
+	std::vector<unsigned int> inds;
 
 	// Indices for top stack
 	for(unsigned int i = 1; i <= sliceCount; ++i)
 	{
-		meshData->indices.push_back(0);
-		meshData->indices.push_back(i+1);
-		meshData->indices.push_back(i);
+		inds.push_back(0);
+		inds.push_back(i+1);
+		inds.push_back(i);
 	}
 
 	// Indices for inner stacks
@@ -132,37 +139,43 @@ MeshData* GeometryGenerator::CreateSphere(gFloat radius, unsigned int sliceCount
 	{
 		for(unsigned int j = 0; j < sliceCount; ++j)
 		{
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j+1);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j+1);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
+			inds.push_back(baseIndex + i*ringVertexCount + j);
+			inds.push_back(baseIndex + i*ringVertexCount + j+1);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j);
+			inds.push_back(baseIndex + i*ringVertexCount + j+1);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
 		}
 	}
 
 	// Indices for bottom stack
-	unsigned int southPoleIndex = (unsigned int)meshData->vertices.size()-1;
+	unsigned int southPoleIndex = (unsigned int)verts.size()-1;
 	baseIndex = southPoleIndex - ringVertexCount;
 	for(unsigned int i = 0; i < sliceCount; ++i)
 	{
-		meshData->indices.push_back(southPoleIndex);
-		meshData->indices.push_back(baseIndex+i);
-		meshData->indices.push_back(baseIndex+i+1);
+		inds.push_back(southPoleIndex);
+		inds.push_back(baseIndex+i);
+		inds.push_back(baseIndex+i+1);
 	}
 
-	meshData->texFilename = "../GladeEngine/Textures/" + texFilename;
-	meshData->color = color;
-	return meshData;
+	auto newMesh = SmartPointer<MeshData>(new MeshData(name.length()>0? name : GenerateName("Unnamed MeshData %i"), verts, inds, "../GladeEngine/Textures/" + texFilename, color));
+	if(newMesh) 
+	{
+		if(saveSmart)
+			RegisterSmartResource(newMesh);
+		else
+			RegisterWeakResource(newMesh);
+	}
+	return newMesh;
 }
 
-MeshData* GeometryGenerator::CreateCylinder(gFloat radius, gFloat height, unsigned int sliceCount, unsigned int stackCount, std::string texFilename, D3DXVECTOR4 color)
+SmartPointer<MeshData> MeshData::CreateCylinder(const std::string& name, bool saveSmart, gFloat radius, gFloat height, unsigned int sliceCount, unsigned int stackCount, std::string texFilename, D3DXVECTOR4 color)
 {
-	MeshData* meshData = new MeshData;
+	std::vector<Vertex> verts;
 	gFloat halfHeight = height * gFloat(0.5f);
 	Vertex top(0.0f, halfHeight, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f);
 	Vertex bottom(0.0f, -halfHeight, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f);
-	meshData->vertices.push_back(bottom);
+	verts.push_back(bottom);
 
 	gFloat heightStep = height / stackCount;
 	gFloat thetaStep = TWO_PI / sliceCount;
@@ -187,7 +200,7 @@ MeshData* GeometryGenerator::CreateCylinder(gFloat radius, gFloat height, unsign
 		v.texCoord.x = gFloat(0.5f) * c + gFloat(0.5f);
 		v.texCoord.y = gFloat(0.5f) * s + gFloat(0.5f);
 
-		meshData->vertices.push_back(v);
+		verts.push_back(v);
 	}
 
 	// Create middle of cylinder
@@ -215,7 +228,7 @@ MeshData* GeometryGenerator::CreateCylinder(gFloat radius, gFloat height, unsign
 			D3DXVec3Cross(&v.tangent, &bitangent, &v.normal);
 			D3DXVec3Normalize(&v.normal, &v.normal);
 
-			meshData->vertices.push_back(v);
+			verts.push_back(v);
 		}
 	}
 
@@ -237,17 +250,18 @@ MeshData* GeometryGenerator::CreateCylinder(gFloat radius, gFloat height, unsign
 		v.texCoord.x = gFloat(0.5f) * c + gFloat(0.5f);
 		v.texCoord.y = gFloat(0.5f) * s + gFloat(0.5f);
 
-		meshData->vertices.push_back(v);
+		verts.push_back(v);
 	}
-	meshData->vertices.push_back(top);
+	verts.push_back(top);
+	std::vector<unsigned int> inds;
 
 	// Indicies for bottom
 	unsigned int ringVertexCount = sliceCount+1;	// we duplicate 1st/last vertex per ring because they haver different UVs
 	for(unsigned int i = 0; i < ringVertexCount; ++i)
 	{
-		meshData->indices.push_back(0);
-		meshData->indices.push_back(i);
-		meshData->indices.push_back(i+1);
+		inds.push_back(0);
+		inds.push_back(i);
+		inds.push_back(i+1);
 	}
 
 	// Indices for middle
@@ -256,38 +270,44 @@ MeshData* GeometryGenerator::CreateCylinder(gFloat radius, gFloat height, unsign
 	{
 		for(unsigned int j = 0; j < sliceCount; ++j)
 		{
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
+			inds.push_back(baseIndex + i*ringVertexCount + j);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
 
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
-			meshData->indices.push_back(baseIndex + (i)*ringVertexCount + j+1);
+			inds.push_back(baseIndex + i*ringVertexCount + j);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
+			inds.push_back(baseIndex + (i)*ringVertexCount + j+1);
 		}
 	}
 
 	// Indices for top
-	unsigned int topIndex = meshData->vertices.size()-1;
+	unsigned int topIndex = verts.size()-1;
 	baseIndex = topIndex - ringVertexCount;
 	for(unsigned int i = 0; i < sliceCount; ++i)
 	{
-		meshData->indices.push_back(topIndex);
-		meshData->indices.push_back(baseIndex+i+1);
-		meshData->indices.push_back(baseIndex+i);
+		inds.push_back(topIndex);
+		inds.push_back(baseIndex+i+1);
+		inds.push_back(baseIndex+i);
 	}
 
-	meshData->color = color;
-	meshData->texFilename = "../GladeEngine/Textures/" + texFilename;
-	return meshData;
+	auto newMesh = SmartPointer<MeshData>(new MeshData(name.length()>0? name : GenerateName("Unnamed MeshData %i"), verts, inds, "../GladeEngine/Textures/" + texFilename, color));
+	if(newMesh) 
+	{
+		if(saveSmart)
+			RegisterSmartResource(newMesh);
+		else
+			RegisterWeakResource(newMesh);
+	}
+	return newMesh;
 }
 
-MeshData* GeometryGenerator::CreateCone(gFloat radius, gFloat height, unsigned int sliceCount, unsigned int stackCount, std::string texFilename, D3DXVECTOR4 color)
+SmartPointer<MeshData> MeshData::CreateCone(const std::string& name, bool saveSmart, gFloat radius, gFloat height, unsigned int sliceCount, unsigned int stackCount, std::string texFilename, D3DXVECTOR4 color)
 {
-	MeshData* meshData = new MeshData;
+	std::vector<Vertex> verts;
 	gFloat halfHeight = height * gFloat(0.5f);
 	Vertex top(0.0f, halfHeight, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f);
 	Vertex bottom(0.0f, -halfHeight, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.5f, 0.5f);
-	meshData->vertices.push_back(bottom);
+	verts.push_back(bottom);
 
 	gFloat heightStep = height / stackCount;
 	gFloat thetaStep = TWO_PI / sliceCount;
@@ -311,7 +331,7 @@ MeshData* GeometryGenerator::CreateCone(gFloat radius, gFloat height, unsigned i
 		v.texCoord.x = gFloat(0.5f) * c + gFloat(0.5f);
 		v.texCoord.y - gFloat(0.5f) * s + gFloat(0.5f);
 
-		meshData->vertices.push_back(v);
+		verts.push_back(v);
 	}
 
 	// Create middle of cone
@@ -340,18 +360,19 @@ MeshData* GeometryGenerator::CreateCone(gFloat radius, gFloat height, unsigned i
 			D3DXVec3Cross(&v.tangent, &bitangent, &v.normal);
 			D3DXVec3Normalize(&v.normal, &v.normal);
 
-			meshData->vertices.push_back(v);
+			verts.push_back(v);
 		}
 	}
-	meshData->vertices.push_back(top);
+	verts.push_back(top);
+	std::vector<unsigned int> inds;
 
 	// Indices for bottom
 	unsigned int ringVertexCount = sliceCount + 1;
 	for(unsigned int i = 0; i < ringVertexCount; ++i)
 	{
-		meshData->indices.push_back(0);
-		meshData->indices.push_back(i);
-		meshData->indices.push_back(i+1);
+		inds.push_back(0);
+		inds.push_back(i);
+		inds.push_back(i+1);
 	}
 
 	// Indices for middle
@@ -360,38 +381,44 @@ MeshData* GeometryGenerator::CreateCone(gFloat radius, gFloat height, unsigned i
 	{
 		for(unsigned int j = 0; j < sliceCount; ++j)
 		{
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
+			inds.push_back(baseIndex + i*ringVertexCount + j);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
 
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
-			meshData->indices.push_back(baseIndex + (i)*ringVertexCount + j+1);
+			inds.push_back(baseIndex + i*ringVertexCount + j);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
+			inds.push_back(baseIndex + (i)*ringVertexCount + j+1);
 		}
 	}
 
 	// Indices for tip
-	unsigned int topIndex = meshData->vertices.size() - 1;
+	unsigned int topIndex = verts.size() - 1;
 	baseIndex = topIndex - ringVertexCount;
 	for(unsigned int i = 0; i < sliceCount; ++i)
 	{
-		meshData->indices.push_back(topIndex);
-		meshData->indices.push_back(baseIndex+i+1);
-		meshData->indices.push_back(baseIndex+i);
+		inds.push_back(topIndex);
+		inds.push_back(baseIndex+i+1);
+		inds.push_back(baseIndex+i);
 	}
 
-	meshData->color = color;
-	meshData->texFilename = "../GladeEngine/Textures/" + texFilename;
-	return meshData;
+	auto newMesh = SmartPointer<MeshData>(new MeshData(name.length()>0? name : GenerateName("Unnamed MeshData %i"), verts, inds, "../GladeEngine/Textures/" + texFilename, color));
+	if(newMesh) 
+	{
+		if(saveSmart)
+			RegisterSmartResource(newMesh);
+		else
+			RegisterWeakResource(newMesh);
+	}
+	return newMesh;
 }
 
-MeshData* GeometryGenerator::CreateCapsule(gFloat radius, gFloat height, unsigned int sliceCount, unsigned int stackCount, std::string texFilename, D3DXVECTOR4 color)
+SmartPointer<MeshData> MeshData::CreateCapsule(const std::string& name, bool saveSmart, gFloat radius, gFloat height, unsigned int sliceCount, unsigned int stackCount, std::string texFilename, D3DXVECTOR4 color)
 {
-	MeshData* meshData = new MeshData;
+	std::vector<Vertex> verts;
 	gFloat halfHeight = height * gFloat(0.5f);
 	Vertex top(0.0f, radius+halfHeight, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 	Vertex bot(0.0f, -radius-halfHeight, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-	meshData->vertices.push_back(bot);
+	verts.push_back(bot);
 
 	// StackCount tells how many stacks total between both end caps, but they need to be symmetrical
 	// and the middle rings of each cap need to be at the max radius of the capsule, meaning we need
@@ -432,7 +459,7 @@ MeshData* GeometryGenerator::CreateCapsule(gFloat radius, gFloat height, unsigne
 			v.texCoord.x = theta = TWO_PI;
 			v.texCoord.y = phi / PI;
 
-			meshData->vertices.push_back(v);
+			verts.push_back(v);
 		}
 	}
 
@@ -492,17 +519,18 @@ MeshData* GeometryGenerator::CreateCapsule(gFloat radius, gFloat height, unsigne
 			v.texCoord.x = theta = TWO_PI;
 			v.texCoord.y = phi / PI;
 
-			meshData->vertices.push_back(v);
+			verts.push_back(v);
 		}
 	}
-	meshData->vertices.push_back(top);
+	verts.push_back(top);
+	std::vector<unsigned int> inds;
 
 	// Indices for bottom stack
 	for(i = 1; i <= sliceCount; ++i)
 	{
-		meshData->indices.push_back(0);
-		meshData->indices.push_back(i);
-		meshData->indices.push_back(i+1);
+		inds.push_back(0);
+		inds.push_back(i);
+		inds.push_back(i+1);
 	}
 
 	// Indices for middle
@@ -512,29 +540,35 @@ MeshData* GeometryGenerator::CreateCapsule(gFloat radius, gFloat height, unsigne
 	{
 		for(j = 0; j < sliceCount; ++j)
 		{
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j+1);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j);
-			meshData->indices.push_back(baseIndex + i*ringVertexCount + j+1);
-			meshData->indices.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
+			inds.push_back(baseIndex + i*ringVertexCount + j);
+			inds.push_back(baseIndex + i*ringVertexCount + j+1);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j);
+			inds.push_back(baseIndex + i*ringVertexCount + j+1);
+			inds.push_back(baseIndex + (i+1)*ringVertexCount + j+1);
 		}
 	}
 
 	// Indices for top stack
-	unsigned int topIndex = meshData->vertices.size() - 1;
+	unsigned int topIndex = verts.size() - 1;
 	baseIndex = topIndex - ringVertexCount;
 	for(i = 0; i < sliceCount; ++i)
 	{
-		meshData->indices.push_back(topIndex);
-		meshData->indices.push_back(baseIndex+i+1);
-		meshData->indices.push_back(baseIndex+i);
+		inds.push_back(topIndex);
+		inds.push_back(baseIndex+i+1);
+		inds.push_back(baseIndex+i);
 	}
 
 
-	meshData->texFilename = "../GladeEngine/Textures/" + texFilename;
-	meshData->color = color;
-	return meshData;
+	auto newMesh = SmartPointer<MeshData>(new MeshData(name.length()>0? name : GenerateName("Unnamed MeshData %i"), verts, inds, "../GladeEngine/Textures/" + texFilename, color));
+	if(newMesh) 
+	{
+		if(saveSmart)
+			RegisterSmartResource(newMesh);
+		else
+			RegisterWeakResource(newMesh);
+	}
+	return newMesh;
 }
 
 
@@ -549,9 +583,9 @@ MeshData* GeometryGenerator::CreateCapsule(gFloat radius, gFloat height, unsigne
 //	*-----------* v2					  *-----*-----* v2
 // v0     								v0     m2
 //       
-void GeometryGenerator::Subdivide(MeshData* meshData)
+void MeshData::Subdivide(SmartPointer<MeshData> meshData)
 {
-	MeshData* temp = meshData;
+	SmartPointer<MeshData> temp = meshData;
 	meshData->vertices.resize(0);
 	meshData->indices.resize(0);
 
