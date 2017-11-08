@@ -302,9 +302,25 @@ Quaternion Quaternion::Inverse() const
 
 Quaternion& Quaternion::InvertInPlace()
 {
-	(*this).ConjugateInPlace();
-	(*this) *= (1 / (gFloat(*this) * gFloat(*this)));
+	x = -x;
+	y = -y;
+	z = -z;
+	(*this) *= (1 / Pow(float(*this),2));
 	return (*this);
+}
+
+// Quaternion Inverse assuming the quaternion is a unit quaternion
+// When quaternion is unit, inverse is equivalent to conjugate.
+Quaternion Quaternion::UnitInverse() const
+{
+	return Quaternion(-x, -y, -z, w);
+}
+Quaternion& Quaternion::UnitInverseInPlace()
+{
+	x = -x;
+	y = -y;
+	z = -z;
+	return *this;
 }
 
 // Returns the Negated version of this Quaternion, but does not alter it

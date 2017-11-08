@@ -36,7 +36,7 @@ void ParticleSpringForceGenerator::SetAnchor(const Vector& v)
 
 /*
  // Calculate the vector of the spring.
-    Vector3 force;
+    D3DXVECTOR3 force;
     particle->getPosition(&force);
     force -= other->getPosition();
 

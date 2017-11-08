@@ -46,6 +46,12 @@
     <Filter Include="System\Input">
       <UniqueIdentifier>{3e540ffe-5f48-44e3-8fc1-95a035d1439a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="System\Memory">
+      <UniqueIdentifier>{8f4af658-f962-417b-b0b3-6cc32eca4cc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="System\Clocks">
+      <UniqueIdentifier>{dd658e2d-030e-4be2-8912-2966aa1b0f9e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Glade.h">
@@ -240,14 +246,26 @@
     <ClInclude Include="Math\Ray.h">
       <Filter>Math</Filter>
     </ClInclude>
-    <ClInclude Include="System\Timer.h">
-      <Filter>System</Filter>
-    </ClInclude>
     <ClInclude Include="System\Graphics\FontDraw.h">
       <Filter>System\Graphics</Filter>
     </ClInclude>
     <ClInclude Include="System\Resource.h">
       <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Memory\ManagedMemoryPool.h">
+      <Filter>System\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Clocks\MasterClock.h">
+      <Filter>System\Clocks</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Clocks\Clock.h">
+      <Filter>System\Clocks</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Clocks\GameClock.h">
+      <Filter>System\Clocks</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Memory\MemoryPool.h">
+      <Filter>System\Memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -380,14 +398,26 @@
     <ClCompile Include="System\Arcball\Arcball.cpp">
       <Filter>System\Input</Filter>
     </ClCompile>
-    <ClCompile Include="System\Timer.cpp">
-      <Filter>System</Filter>
-    </ClCompile>
     <ClCompile Include="System\Graphics\FontDraw.cpp">
       <Filter>System\Graphics</Filter>
     </ClCompile>
     <ClCompile Include="System\Resource.cpp">
       <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Memory\ManagedMemoryPool.cpp">
+      <Filter>System\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Clocks\MasterClock.cpp">
+      <Filter>System\Clocks</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Clocks\Clock.cpp">
+      <Filter>System\Clocks</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Clocks\GameClock.cpp">
+      <Filter>System\Clocks</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Memory\MemoryPool.cpp">
+      <Filter>System\Memory</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

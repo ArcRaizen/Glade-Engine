@@ -62,6 +62,8 @@ public:
 	Quaternion&	ConjugateInPlace();
 	Quaternion	Inverse() const;
 	Quaternion& InvertInPlace();
+	Quaternion  UnitInverse() const;
+	Quaternion& UnitInverseInPlace();
 	Quaternion	Negated() const;
 	Quaternion& NegateInPlace();
 	Quaternion	Normalized() const;

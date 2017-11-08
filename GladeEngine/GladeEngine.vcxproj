@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -24,7 +24,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -40,21 +40,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>.\..\lib\</OutDir>
-    <IncludePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Inc;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;.\..\GladeEngine\;$(IncludePath)</IncludePath>
-    <ExecutablePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Utilities\bin\x86;$(ExecutablePath)</ExecutablePath>
-    <LibraryPath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Debug;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Microsoft DirectX SDK %28June 2010%29\Include;$(SolutionDir)Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Inc;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Debug;$(SolutionDir)Microsoft DirectX SDK %28June 2010%29\Lib\x86;$(LibraryPath)</LibraryPath>
+    <ExecutablePath>$(SolutionDir)Microsoft DirectX SDK %28June 2010%29\Utilities\bin\x86;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>.\..\lib\</OutDir>
-    <IncludePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Inc;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Include;.\..\GladeEngine\;$(IncludePath)</IncludePath>
-    <ExecutablePath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Utilities\bin\x86;$(ExecutablePath)</ExecutablePath>
-    <LibraryPath>C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Samples\C++\Effects11\Release;C:\Program Files %28x86%29\Microsoft DirectX SDK %28June 2010%29\Lib\x86;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Downloads\Default\DirectXTK12-master\DirectXTK12-master\Inc;.\..\GladeEngine\;$(IncludePath);$(DXSDK_DIR)Include</IncludePath>
+    <LibraryPath>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.15063.0\um\x86;$(LibraryPath);$(DXSDK_DIR)Lib\x86</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -130,6 +130,9 @@
     <ClInclude Include="System\Application.h" />
     <ClInclude Include="System\Arcball\Arcball.h" />
     <ClInclude Include="System\Camera.h" />
+    <ClInclude Include="System\Clocks\Clock.h" />
+    <ClInclude Include="System\Clocks\GameClock.h" />
+    <ClInclude Include="System\Clocks\MasterClock.h" />
     <ClInclude Include="System\GeometryGenerator.h" />
     <ClInclude Include="System\Graphics\DebugDraw.h" />
     <ClInclude Include="System\Graphics\Direct3D.h" />
@@ -138,10 +141,11 @@
     <ClInclude Include="System\Graphics\Vertex.h" />
     <ClInclude Include="System\Input.h" />
     <ClInclude Include="System\KeyCodes.h" />
+    <ClInclude Include="System\Memory\ManagedMemoryPool.h" />
+    <ClInclude Include="System\Memory\MemoryPool.h" />
     <ClInclude Include="System\Octree\Octnode.h" />
     <ClInclude Include="System\Octree\Octree.h" />
     <ClInclude Include="System\Resource.h" />
-    <ClInclude Include="System\Timer.h" />
     <ClInclude Include="Utils\Assert.h" />
     <ClInclude Include="Utils\SmartPointer\ReferenceCounter.h" />
     <ClInclude Include="Utils\SmartPointer\SmartPointer.h" />
@@ -185,16 +189,20 @@
     <ClCompile Include="System\Application.cpp" />
     <ClCompile Include="System\Arcball\Arcball.cpp" />
     <ClCompile Include="System\Camera.cpp" />
+    <ClCompile Include="System\Clocks\Clock.cpp" />
+    <ClCompile Include="System\Clocks\GameClock.cpp" />
+    <ClCompile Include="System\Clocks\MasterClock.cpp" />
     <ClCompile Include="System\GeometryGenerator.cpp" />
     <ClCompile Include="System\Graphics\DebugDraw.cpp" />
     <ClCompile Include="System\Graphics\Direct3D.cpp" />
     <ClCompile Include="System\Graphics\FontDraw.cpp" />
     <ClCompile Include="System\Graphics\GraphicsLocator.cpp" />
     <ClCompile Include="System\Input.cpp" />
+    <ClCompile Include="System\Memory\ManagedMemoryPool.cpp" />
+    <ClCompile Include="System\Memory\MemoryPool.cpp" />
     <ClCompile Include="System\Octree\Octnode.cpp" />
     <ClCompile Include="System\Octree\Octree.cpp" />
     <ClCompile Include="System\Resource.cpp" />
-    <ClCompile Include="System\Timer.cpp" />
     <ClCompile Include="Utils\Assert.cpp" />
     <ClCompile Include="Utils\Trace.cpp" />
     <ClCompile Include="World.cpp" />

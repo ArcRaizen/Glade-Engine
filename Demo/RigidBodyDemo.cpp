@@ -1,11 +1,26 @@
 #include "RigidBodyDemo.h"
 #include <iostream>
 #include <stdio.h>
-
+#include "System\Memory\MemoryPool.h"
+#include "System\Memory\ManagedMemoryPool.h"
 RigidBodyDemo::RigidBodyDemo() { }
 
 bool RigidBodyDemo::Initialize()
 {
+	MemoryPool pool(16,4);
+	auto p = pool.Allocate();
+	auto q = pool.Allocate();
+	auto r = pool.Allocate();
+	auto s = pool.Allocate();
+	pool.Deallocate(p);
+	p = pool.Allocate();
+	pool.DestroyPool();
+
+	auto pool2 = ManagedMemoryPool::CreatePool("test", 4, 1);
+	auto a = ManagedMemoryPool::Allocate("test", true);
+	auto b = ManagedMemoryPool::Allocate("test", true);
+	auto c = ManagedMemoryPool::Allocate("test", true);
+
 	if(!GApplication::Initialize())
 		return false;
 	input->InitArcball();
@@ -31,7 +46,7 @@ bool RigidBodyDemo::Initialize()
 	box->AllowSetVelocity();
 	box->SetAwake(true);
 
-	box2 = new RigidBody(Vector(-2.9,20,10), Quaternion(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
+	box2 = new RigidBody(Vector(-2.9,16,10), Quaternion(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), Vector(0,0,0), 0.95f, 0.8f, true, Vector::GRAVITY);
 	box2->AddCollider(new BoxCollider(box2, boxMaterial, boxInvMass, Vector(2,2,2)));
 	box2->LoadMesh(boxMesh);
 	box2->SetAwake(false);
@@ -64,6 +79,10 @@ bool RigidBodyDemo::Initialize()
 
 RigidBodyDemo::~RigidBodyDemo()
 {
+	delete box;
+	delete box2;
+	delete box3;
+	delete world;
 }
 
 bool RigidBodyDemo::Update(float dt)
@@ -88,11 +107,56 @@ bool RigidBodyDemo::Update(float dt)
 	}
 	camera->Update(dt);
 
+	if(input->CheckKeyDownEvent(GK_P))
+		Clock::GameClock().TogglePause();
+
 	std::string s = std::to_string(camera->GetView()(3,0));
 	int i = s.length();
 	char* test = new char[i+1];
 	strcpy_s(test, i+1, s.c_str());
-	GraphicsLocator::GetFontGraphics()->PushSentence("test", test, 20, 0, 1, 0, 0);
+	GraphicsLocator::GetFontGraphics()->PushSentence("test", test, 20, 0, 0, 0, 0);
+	delete [] test;
+
+	s = "DeltaTime: " + std::to_string(Clock::GameClock().GetDeltaTimeAsSeconds());
+	i = s.length();
+	test = new char[i+1];
+	strcpy_s(test, i+1, s.c_str());
+	GraphicsLocator::GetFontGraphics()->PushSentence("dtTest", test, 20, 20, 0, 0, 0);
+	delete [] test;
+
+	s = "TotalTime: " + std::to_string(Clock::GameClock().GetTotalTimeAsSeconds());
+	i = s.length();
+	test = new char[i+1];
+	strcpy_s(test, i+1, s.c_str());
+	GraphicsLocator::GetFontGraphics()->PushSentence("totalTimeTest", test, 20, 40, 0, 0, 0);
+	delete [] test;
+
+	s = "UnpausedTime: " + std::to_string(Clock::GameClock().GetCurrentUnpausedTimeAsSeconds());
+	i = s.length();
+	test = new char[i+1];
+	strcpy_s(test, i+1, s.c_str());
+	GraphicsLocator::GetFontGraphics()->PushSentence("unpausedTimeTest", test, 20, 60, 0, 0, 0);
+	delete [] test;
+
+	s = "PausedTime: " + std::to_string(Clock::GameClock().GetCurrentPausedTimeAsSeconds());
+	i = s.length();
+	test = new char[i+1];
+	strcpy_s(test, i+1, s.c_str());
+	GraphicsLocator::GetFontGraphics()->PushSentence("pausedTimeTest", test, 20, 80, 0, 0, 0);
+	delete [] test;
+
+	s = "TotalUnpausedTime: " + std::to_string(Clock::GameClock().GetTotalUnpausedTimeAsSeconds());
+	i = s.length();
+	test = new char[i+1];
+	strcpy_s(test, i+1, s.c_str());
+	GraphicsLocator::GetFontGraphics()->PushSentence("totalUnpausedTimeTest", test, 20, 100, 0, 0, 0);
+	delete [] test;
+
+	s = "TotalPausedTime: " + std::to_string(Clock::GameClock().GetTotalPausedTimeAsSeconds());
+	i = s.length();
+	test = new char[i+1];
+	strcpy_s(test, i+1, s.c_str());
+	GraphicsLocator::GetFontGraphics()->PushSentence("totalPauseDTimeTest", test, 20, 120, 0, 0, 0);
 	delete [] test;
 
 	Ray ray = input->GetMousePickRay(hWnd, camera->GetView(), camera->GetProj());

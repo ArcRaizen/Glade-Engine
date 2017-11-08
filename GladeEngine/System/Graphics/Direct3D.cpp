@@ -322,6 +322,7 @@ bool Direct3D::InitShader(HWND hWnd)
 		return false;
 	ReleaseCOM(shaderBuffer);
 
+
 	// Get Shader effect variables
 	sWorldMatrix = gpEffect->GetVariableByName("worldMatrix")->AsMatrix();
 	sViewMatrix = gpEffect->GetVariableByName("viewMatrix")->AsMatrix();

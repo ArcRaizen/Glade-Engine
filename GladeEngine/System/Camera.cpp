@@ -273,7 +273,7 @@ int Camera::IsBoxInFrustum(AABB& aabb)
 
 	// "Positive" and "Negative" vertices of bounding box
 	// The vertices most and least in the direction of the plane normal
-	// If both are 'p' is outside a plane, the whole box is outside the frustum,
+	// If 'p' is outside a plane, the whole box is outside the frustum,
 	// If 'p' is inside a plane and 'n' is outside, the box intersects that plane
 	Vector p, n;
 
@@ -281,7 +281,7 @@ int Camera::IsBoxInFrustum(AABB& aabb)
 	// Test that plane 1st because it is most likely the Object will be culled by that plane again
 	//		providing an early out to the test
 	// "Plane Coherancy Optimization"
-	if(plane < 0)
+	if(plane > 0)
 	{
 		// Test Object against each plane
 		for(unsigned int i, i_ = 0; i_ < 6; ++i_)

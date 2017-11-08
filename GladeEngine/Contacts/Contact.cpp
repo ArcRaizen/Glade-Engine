@@ -528,7 +528,16 @@ Vector Contact::CalcImpulseFriction(Matrix (&inverseInertiaTensorWorld)[2])
 		// Add to total inverse mass
 		inverseMass += b2->GetInverseMass();
 	}
+/*
+TODO: 4/29/2017
+	INVESTIGATE BS MATRIX MULTIPLICATION ORDER
+	
+	Change of basis formula is A^-1 * M * A
+	all my representations of this look like below A.Times3(M).TimesTranspose3(A) or A.Transpose3Times(M).Times3(A)
+	BUT what if it should be something like A.Transpose3Times(M.Times3(A)) or A.Times3(m.TimesTranspose3(A))
 
+	Fairly sure how it is now is correct
+*/
 	// Change of basis to Contact space
 	Matrix deltaVelocity = (contactToWorld.Times3(deltaVelWorld)).TimesTranspose3(contactToWorld);
 //	Matrix deltaVelocity = (contactToWorld.Transpose3Times(deltaVelWorld)).Times3(contactToWorld);

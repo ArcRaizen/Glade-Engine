@@ -3,7 +3,7 @@
 #define GLADE_PARTICLE_FORCE_GENERATOR_H
 
 #ifndef GLADE_PARTICLE_H
-#include "Particle.h"
+#include "..\Particle.h"
 #endif
 #include <functional>
 

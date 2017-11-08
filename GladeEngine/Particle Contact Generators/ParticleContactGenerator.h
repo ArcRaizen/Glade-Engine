@@ -3,7 +3,7 @@
 #define GLADE_PARTICLE_CONTACT_GENERATOR_H
 
 #ifndef GLADE_PARTICLE_CONTACT_H
-#include "ParticleContact.h"
+#include "..\ParticleContact.h"
 #endif
 
 namespace Glade {

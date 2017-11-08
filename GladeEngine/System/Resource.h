@@ -37,7 +37,7 @@ protected:
 	{
 		Assert(ptr);
 		const auto name = ptr->GetName();
-		AssertMsg(!weakResources.count(name), "Weak Resource with name \"" + name + " already exists");
+		AssertMsg(!weakResources.count(name), "Weak Resource with name \"" + name + "\" already exists");
 		weakResources.emplace(name, ptr);
 	}
 	static void UnregisterWeakResource(const std::string& name)
@@ -52,7 +52,7 @@ protected:
 	{
 		Assert(ptr);
 		const auto name = ptr->GetName();
-		AssertMsg(!smartResources.count(name), "Smart Resource with name \"" + name + " already exists");
+		AssertMsg(!smartResources.count(name), "Smart Resource with name \"" + name + "\" already exists");
 		smartResources.emplace(name, ptr);
 	}
 	static void UnregisterSmartResource(const std::string& name)

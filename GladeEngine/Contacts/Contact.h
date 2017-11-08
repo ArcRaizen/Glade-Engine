@@ -3,7 +3,7 @@
 #define GLADE_CONTACT_H
 
 #ifndef GLADE_RIGID_BODY_H
-#include "RigidBody.h"
+#include "..\RigidBody.h"
 #endif
 
 namespace Glade {

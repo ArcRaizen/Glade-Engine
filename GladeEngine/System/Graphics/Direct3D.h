@@ -15,7 +15,9 @@
 #include <D3D11.h>
 #include <DirectXMath.h>
 #include <D3DX11async.h>
+//#include <d3dcompiler.h>
 #include "d3dx11effect.h"
+//#include <Effects.h>
 #include "../../Math/Matrix.h"
 #include "../GeometryGenerator.h"
 #include "../../Utils/SmartPointer/WeakPointer.h"

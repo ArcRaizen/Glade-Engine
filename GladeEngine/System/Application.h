@@ -7,7 +7,7 @@
 #include "Graphics\GraphicsLocator.h"
 #include "Camera.h"
 #include "Input.h"
-#include "Timer.h"
+#include "Clocks\Clock.h"
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -36,7 +36,6 @@ protected:
 	HINSTANCE hInstance;
 	HWND hWnd;
 
-	Timer gameTimer;
 	Camera* camera;
 	Input* input;
 private:

@@ -355,6 +355,32 @@ void ContactResolver::ResolveInterpenetration2(ContactBatchNode* contactBatch, u
 	Profit
 */
 //#define IGNORE_ROTATION
+/* 4/9/2017
+
+
+	Apply *linear* penetration resolution from more major Contacts to less major Contacts down the chain
+	Iterate multiple times to resolve "rotational" penetration resolution
+	Test for "most major" Contact being against infinite mass object - LOCK it in place after resolutions calculated
+		Treat LOCKED contact as infinite mass in future iterations of less major Contacts
+		Might need to correct for "most major" Contact being allowed to "bounce" after collision, hopefully is naturally resolved via velocity
+		Might need to correct for "most major" Contact not being flush against infintie mass object after initial resolution, hopefully naturally resolved in later frames
+
+
+	Caveat:
+		MOST MAJOR CANNOT CHANGE IN DIRECTION OF ITS NORMAL
+		BUT IT CAN CHANGE IN NON-NORMAL DIRECTION  <-----------------------
+
+		Calculate new resolutions against LOCKED Contact by ignoring linear inertia in direction of Contact normal?
+		Simply apply 0 resolution in direction of normal?
+		How can you tell how much to ignore if normal isn't perfectly aligned with cardinal axis?
+		
+		Resolve all Contacts from "least major" to "most major", then apply "most majors" *linear* resolution to all Contacts in batch?????
+		This allows the "most major" Contact to be pushed in directions not directly along its Contact normal, but also lets it resolve without sacrificing its original resolution...
+		In theory...
+		Change queue to stack to resolve in reverse
+			Maybe resolving in reverse causes unrealistic resolutions...perhaps resolve normally, then re-resolve "most major" one last time, then LOCK it, then continue to next iteration
+			TRY RESOLVING IN REVERSE FIRST
+*/
 void ContactResolver::ResolveInterpenetration3(ContactBatch* contactBatch, unsigned int numContacts)
 {
 	Vector deltaPos[2];

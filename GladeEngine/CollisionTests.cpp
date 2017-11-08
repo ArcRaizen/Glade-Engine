@@ -293,8 +293,11 @@ int CollisionTests::SphereConeTest(Collider* _a, Collider* _b, Contact* contacts
 	// is less than Sphere radius
 	if(e < s->radius)
 	{
-		// Updated image to show this part: http://i.imgur.com/K6w9iSg.png
-		Vector p = c->axis * (a + e*Sin(c->theta)) / (cTheta*cTheta);
+/*		// Updated image to show this part: http://i.imgur.com/OPDi7Vp.png
+		Vector p = c->tip + (c->axis * (a + e*Sin(c->theta)) / (cTheta*cTheta));
+ 12/14/16
+ */
+		Vector p = c->tip + (c->axis * (a + (distCenterToAxis * Tan(c->theta))));
 		Vector normal = (p - s->position).Normalized();
 		contacts->SetNewContact(s->attachedBody, c->attachedBody, GetCoeffOfRestitution(_a, _b),
 								GetStaticFriction(_a, _b), GetDynamicFriction(_a, _b),
@@ -1260,12 +1263,7 @@ int CollisionTests::EPA(Collider* _a, Collider* _b, SupportPoint simplex[4], Con
 
 		// Add new faces to cover the "hole" made from the removed faces
 		for(auto iter = edges.begin(); iter != edges.end(); ++iter)
-		{
-			Triangle t(newPoint, iter->a, iter->b);
-			triangles.push_back(t);
-			gFloat g = t.normal.DotProduct(t.a.p);
-			g += 1;
-		}
+			triangles.emplace_back(newPoint, iter->a, iter->b);
 
 		// Clear edge list for next iteration
 		edges.clear();

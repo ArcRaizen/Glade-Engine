@@ -122,7 +122,16 @@ void RigidBody::CalcDerivedData()
 
 	// Update position now that Centroid has moved
 	position = transformationMatrix.Times3(-localCentroid) + centroid;
+/*
+TODO: 4/29/2017
+	INVESTIGATE BS MATRIX MULTIPLICATION ORDER
+	
+	Change of basis formula is A^-1 * M * A
+	all my representations of this look like below A.Times3(M).TimesTranspose3(A) or A.Transpose3Times(M).Times3(A)
+	BUT what if it should be something like A.Transpose3Times(M.Times3(A)) or A.Times3(m.TimesTranspose3(A))
 
+	Fairly sure how it is now is correct
+*/
 	// Calculate inverse inertia tensor in world space
 	inverseInertiaTensorWorld = (transformationMatrix.Times3(inverseInertiaTensor)).TimesTranspose3(transformationMatrix);
 //	inverseInertiaTensorWorld = (transformationMatrix.Transpose3Times(inverseInertiaTensor)).Times3(transformationMatrix);

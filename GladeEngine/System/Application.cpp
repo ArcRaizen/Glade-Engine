@@ -118,8 +118,8 @@ void GApplication::Run()
 	// Initialize message structure
 	ZeroMemory(&msg, sizeof(MSG));
 
-	// Initialize timer stuff
-	gameTimer.Start();
+	// Create game clock
+	Clock::Instance();
 
 	// Loop until there is a quit message from the window or the user
 	gFloat dt;
@@ -137,10 +137,9 @@ void GApplication::Run()
 			done = true;
 		else
 		{
-			gameTimer.Tick();
-			gameTimer.DeltaTime(dt);
-			input->Update(dt);
-			if(!Update(dt))
+			Clock::Instance().Tick();
+			input->Update(Clock::GameClock().GetDeltaTimeAsSeconds());
+			if(!Update(Clock::GameClock().GetDeltaTimeAsSeconds()))
 				done = true;
 			Render();
 		}

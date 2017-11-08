@@ -3,7 +3,7 @@
 #define GLADE_OCTNODE_H
 
 #ifndef GLADE_OBJECT_H
-#include "Object.h"
+#include "..\..\Object.h"
 #endif
 #include <vector>
 

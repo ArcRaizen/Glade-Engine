@@ -23,6 +23,10 @@ private:
 	//		and pressing the 'negative' key moves towards -1.
 	// The rate of that movement is "acceleration" - the higher, the faster the movement
 	// If no buttons pressed, the value returns to 0 at rate of "deceleration" - the higher the faster the movement
+	//		Think of acceleration and deceleration as "1/x" with "x being the number of seconds you want it to take to reach max ouput or 0 respectively
+	//		An acceleration of 0.2 (or 1/5) means it will take 5 seconds to reach maximum output.
+	//		A deceleration of 5 (or 1/(1/5)) means it will take 1/5 of a second to reset to 0 from maximum output
+	//		An acceleration of 60 means it will take 1/60 of a second (or 1 frame) to reach maximum output. Anything higher than 60 is basically irrelevant
 	struct InputAxis
 	{
 		InputAxis() : type(Type::KEY_MOUSE_BUTTON), positiveKey(GK_NONE), negativeKey(GK_NONE), 

@@ -416,35 +416,6 @@ Object* World::RayCast(Ray ray, gFloat& t, int mask)
 	unsigned int id, numC, index;
 	gFloat dist = 0;
 
-	// Check starting cell for Objects
-	cell = hashTable[Hash(ray.origin)];
-	if(cell != nullptr)
-	{
-		// Check each Object in cell for collision with ray
-		for(unsigned int i = 0; i < cell->bucket.size(); ++i)
-		{
-			// Make sure we haven't checked this Object already (Objects can be in multiple cells)
-			id = cell->bucket[i]->GetID();
-			if(objectIDs.count(id) == 0)
-			{
-				objectIDs.insert(id);
-
-				// Check each Collider for each Object
-				numC = cell->bucket[i]->GetColliders(colliders);
-				for(unsigned int j = 0; j < numC; ++j)
-				{
-					// Check that the Collider is enabled and matches the collision mask of the ray
-					if(colliders[j]->IsEnabled() && colliders[j]->QueryCollisionMask(mask))
-					{
-						// Actually test collider against ray
-						if(CollisionTests::RayAABBTest(ray, colliders[j]->GetBounds(), t))
-							return cell->bucket[i];	// if collision, return the object
-					}
-				}
-			}
-		}
-	}
-
 	// Get parameters for moving down the ray incrementally
 	Vector start = ray.origin;
 	Vector delta = ray.GetEndPoint() - start;
@@ -453,38 +424,7 @@ Object* World::RayCast(Ray ray, gFloat& t, int mask)
 
 	// Move down ray until it enters a new cell, then check the new cell for collisions
 	do
-	{	// Choose which direction we move to reach a new cell
-		if(tMax.x < tMax.y)
-		{
-			if(tMax.x < tMax.z)
-			{
-				//dist += tMax.x;
-				tMax.x += tDelta.x;
-				dist = tMax.x;
-			}
-			else
-			{
-				//dist += tMax.z;
-				tMax.z += tDelta.z;
-				dist = tMax.z;
-			}
-		}
-		else
-		{
-			if(tMax.y < tMax.z)
-			{
-				//dist += tMax.y;
-				tMax.y += tDelta.y;
-				dist = tMax.y;
-			}
-			else
-			{
-				//dist += tMax.z;
-				tMax.z += tDelta.z;
-				dist = tMax.z;
-			}
-		}
-		
+	{	
 		// Check new cell for Objects
 		index = Hash(start + delta*dist);
 		if(index >= numBuckets) return nullptr;
@@ -516,6 +456,38 @@ Object* World::RayCast(Ray ray, gFloat& t, int mask)
 				}
 			}
 		}
+
+		// Choose which direction we move to reach a new cell
+		if(tMax.x < tMax.y)
+		{
+			if(tMax.x < tMax.z)
+			{
+				//dist += tMax.x;
+				tMax.x += tDelta.x;
+				dist = tMax.x;
+			}
+			else
+			{
+				//dist += tMax.z;
+				tMax.z += tDelta.z;
+				dist = tMax.z;
+			}
+		}
+		else
+		{
+			if(tMax.y < tMax.z)
+			{
+				//dist += tMax.y;
+				tMax.y += tDelta.y;
+				dist = tMax.y;
+			}
+			else
+			{
+				//dist += tMax.z;
+				tMax.z += tDelta.z;
+				dist = tMax.z;
+			}
+		}
 	} while(dist < 1.0f && tMax.x < 1.0f && tMax.y < 1.0f && tMax.z < 1.0f);
 
 	// No collision with ray
@@ -534,35 +506,6 @@ std::vector<std::pair<Object*, gFloat>> World::RayCastPenetrate(Ray ray, int mas
 	unsigned int id, numC, index;
 	gFloat dist = 0, t;
 
-	// Check starting cell for Objects
-	cell = hashTable[Hash(ray.origin)];
-	if(cell != nullptr)
-	{
-		// Check each Object in cell for collision with ray
-		for(unsigned int i = 0; i < cell->bucket.size(); ++i)
-		{
-			// Make sure we haven't checked this Object already (Objects can be in multiple cells)
-			id = cell->bucket[i]->GetID();
-			if(objectIDs.count(id) == 0)
-			{
-				objectIDs.insert(id);
-
-				// Check each Collider for each Object
-				numC = cell->bucket[i]->GetColliders(colliders);
-				for(unsigned int j = 0; j < numC; ++j)
-				{
-					// Check that the Collider is enabled and matches the collision mask of the ray
-					if(colliders[j]->IsEnabled() && colliders[j]->QueryCollisionMask(mask))
-					{
-						// Actually test collider against ray
-						if(CollisionTests::RayAABBTest(ray, colliders[j]->GetBounds(), t))
-							objects.push_back(std::make_pair(cell->bucket[i], t));	// if collision, Save object to return
-					}
-				}
-			}
-		}
-	}
-
 	// Get parameters for moving down the ray incrementally
 	Vector start = ray.origin;
 	Vector delta = ray.GetEndPoint() - start;
@@ -571,34 +514,7 @@ std::vector<std::pair<Object*, gFloat>> World::RayCastPenetrate(Ray ray, int mas
 
 	// Move down ray until it enters a new cell, then check the new cell for collisions
 	do
-	{	// Choose which direction we move to reach a new cell
-		if(tMax.x < tMax.y)
-		{
-			if(tMax.x < tMax.z)
-			{
-				dist += tMax.x;
-				tMax.x += tDelta.x;
-			}
-			else
-			{
-				dist += tMax.z;
-				tMax.z += tDelta.z;
-			}
-		}
-		else
-		{
-			if(tMax.y < tMax.z)
-			{
-				dist += tMax.y;
-				tMax.y += tDelta.y;
-			}
-			else
-			{
-				dist += tMax.z;
-				tMax.z += tDelta.z;
-			}
-		}
-		
+	{	
 		// Check new cell for Objects
 		index = Hash(start + delta*dist);
 		if(index >= numBuckets) continue;
@@ -627,6 +543,34 @@ std::vector<std::pair<Object*, gFloat>> World::RayCastPenetrate(Ray ray, int mas
 						}
 					}
 				}
+			}
+		}
+
+		// Choose which direction we move to reach a new cell
+		if(tMax.x < tMax.y)
+		{
+			if(tMax.x < tMax.z)
+			{
+				dist += tMax.x;
+				tMax.x += tDelta.x;
+			}
+			else
+			{
+				dist += tMax.z;
+				tMax.z += tDelta.z;
+			}
+		}
+		else
+		{
+			if(tMax.y < tMax.z)
+			{
+				dist += tMax.y;
+				tMax.y += tDelta.y;
+			}
+			else
+			{
+				dist += tMax.z;
+				tMax.z += tDelta.z;
 			}
 		}
 	} while(tMax.x < 1.0f && tMax.y < 1.0f && tMax.z < 1.0f);
