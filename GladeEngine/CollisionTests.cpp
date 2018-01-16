@@ -263,7 +263,7 @@ int CollisionTests::SphereConeTest(Collider* _a, Collider* _b, Contact* contacts
 	// http://www.gamedev.net/topic/555628-sphere-cone-test-with-no-sqrt-for-frustum-culling/
 	// Image I drew to prove/check math: http://i.imgur.com/58j3Evq.png
 
-	// Vector from Sphere center to Cone tip
+	// Vector from Cone tip to Sphere center
 	Vector v = s->position - c->tip;
 
 	// Signed Distance of Sphere center along Cone axis
@@ -887,7 +887,10 @@ int CollisionTests::GJKTest(Collider* _a, Collider* _b, Contact* contacts)
 	// Array of 4 vertices representing a k-Simplex as k goes from 0 to 3
 	// Always arranged so the largest index is the newest vertex 'a' and the smallest index is the oldest vertex ('b', 'c', or 'd')
 	SupportPoint simplex[4];
-	Vector d = (_b->position - _a->position).Normalized();	// starting search direction
+	Vector d(1,1,1);// = (_b->position - _a->position).Normalized();	// starting search direction
+		// Had been doing search direction equal to direction from _a to _b, but had degenerate cases
+		// Stacked cubes with the same dimensions creates a line segment that contains the origin and a (0,0,0) search direction
+		// Fairly abritrary workaround, picking diagonal direction so stacks shouldn't cause issues
 	SupportPoint supp;
 	unsigned int simplexIndex = 0;
 
@@ -926,11 +929,54 @@ bool CollisionTests::GJKDoSimplex(SupportPoint simplex[4], unsigned int& simplex
 		case 2:		// 1-Simplex - Line Segment
 		{
 			Vector ab = simplex[0] - simplex[1], ao = simplex[1].p.Negated();
+/*			// Eric Catto GDC 2010 presentation method, need to test if better/faster
+			// naive assumption is it's slower on average because of magnitude/normalize
+			// doesn't catch degenerate case I've found, requires same workaround as other method
+			Vector abNorm = ab.Normalized();
+			gFloat abMag = ab.Magnitude();
+			gFloat v = simplex[1].p.Negated().DotProduct(abNorm) / abMag;
+			gFloat u = simplex[0].p.DotProduct(abNorm) / abMag;
 
+			// New search direction is negative of closest point on AB to origin
+			Vector newD;
+			if(v <= 0.0f)
+			{	// Reset Simplex to A
+				simplex[0] = simplex[1];
+				simplexIndex = 1;
+				newD = -simplex[1].p;
+			}
+			else if(u <= 0.0f)
+			{	// Reset Simplex to B
+				simplexIndex = 1;
+				newD = -simplex[0].p;
+			}
+			else
+				newD = -(simplex[1].p * u + simplex[0].p * v);
+
+			// Degenerate Case (e.g. 2 identical boxes in a stack, generates d = 0,0,0
+			// Fairly arbitrary: pick new direction orthogonal to original direction to avoid, restart with 1st point, will correct self
+			if(newD.IsZero())
+			{
+				d = d.CrossProduct(d == Vector::UP || d == Vector::DOWN ? Vector::RIGHT:  Vector::UP);
+				simplex[0] = simplex[1];
+				simplexIndex = 1;
+			}
+			else
+				d = newD;
+*/		
 			// AB points in direction towards origin, search for next point
 			// in direction towards origin & perpendicular to AB
 			if(ab.DotProduct(ao) > 0)
-				d  = (ab.CrossProduct(ao)).CrossProduct(ab);
+			{	// Degenerate Case (e.g. 2 identical boxes in a stack, generates d = (0,0,0)
+				Vector newD  = ab * (ao * ab);
+				if(newD.IsZero())
+				{	// Fairly arbitrary: pick new direction orthogonal to original direction to avoid, restart with 1st point, will correct self
+					d = d.CrossProduct(d == Vector::UP || d == Vector::DOWN ? Vector::RIGHT : Vector::UP); 
+					simplexIndex = 1;
+				}
+				else
+					d = newD;
+			}
 			else	// AB not in direction towards origin, throwout B
 			{		// search directly toward origin now
 				simplex[0] = simplex[1];
@@ -940,7 +986,7 @@ bool CollisionTests::GJKDoSimplex(SupportPoint simplex[4], unsigned int& simplex
 			return false;
 		}
 		case 3:		// 2-Simplex - Triangle
-		{	// Test which Voronoi region of the triangle with origin is in
+		{	// Test which Voronoi region of the triangle the origin is in
 			// If not in region inside triangle, throwout the remaining point(s) and
 			// restart the Simplex with the corresponding point(s) and a new search direction
 			Vector ab = simplex[1] - simplex[2], ac = simplex[0] - simplex[2], ao = simplex[2].p.Negated();
@@ -1196,7 +1242,7 @@ int CollisionTests::EPA(Collider* _a, Collider* _b, SupportPoint simplex[4], Con
 	std::list<Edge>::iterator eIter;
 	SupportPoint newPoint;
 	Edge e;
-	gFloat dist = G_MAX, prevDist = 0;
+	gFloat dist = G_MAX;
 
 	triangles.push_back(Triangle(simplex[3], simplex[2], simplex[1]));
 	triangles.push_back(Triangle(simplex[3], simplex[1], simplex[0]));
@@ -1217,24 +1263,14 @@ int CollisionTests::EPA(Collider* _a, Collider* _b, SupportPoint simplex[4], Con
 			}
 		}
 
-		// Check if the face we chose is sufficiently close to the border of the Minkowski Difference
-		// If so, end now, we have the info we're looking for
-		if(dist - prevDist <= EPADistanceThreshold)
-			break;
-
 		// Get new support point from chosen face's normal
 		newPoint.Set(_a, _b, (*face).normal);
 
 		// New support point isn't any further away, it's on the nearest face
 		// Nearest face must be on edge of Minkowski Difference
-		if(face->normal.DotProduct(newPoint.p) == dist)
+//		if(face->normal.DotProduct(newPoint.p) == dist)
+		if(face->normal.DotProduct(newPoint.p) - dist < EPADistanceThreshold)
 			break;
-
-		// Get list of faces "seen" by new support point
-		// Face is "seen" if new support point is in positive halfspace of plane containing face
-		// (erase_if and fancy lambda to move all "seen" faces to end of triangles vector
-		auto iter = std::remove_if(triangles.begin(), triangles.end(), 
-				[&](Triangle t) { return t.normal.DotProduct(newPoint.p - t.a.p) > 0; });
 
 		// Add edges of each "seen" face to edges list
 		// If opposite edge already in list, don't add and remove opposite edge
@@ -1248,18 +1284,19 @@ int CollisionTests::EPA(Collider* _a, Collider* _b, SupportPoint simplex[4], Con
 						}
 						edges.emplace_back(a,b);
 		};
-		for(auto i = iter; i != triangles.end(); ++i)
+
+		for(auto iter = triangles.begin(); iter != triangles.end();)
 		{
-			addEdgeLambda(i->a, i->b);
-			addEdgeLambda(i->b, i->c);
-			addEdgeLambda(i->c, i->a);
+			if(iter->normal.DotProduct(newPoint.p - iter->a.p) > 0)
+			{
+				addEdgeLambda(iter->a, iter->b);
+				addEdgeLambda(iter->b, iter->c);
+				addEdgeLambda(iter->c, iter->a);
+				iter = triangles.erase(iter);
+				continue;
+			}
+			iter++;
 		}
-
-		// Remove "seen" faces from list
-		triangles.erase(iter, triangles.end());
-
-		// Remove chosen face from polytope
-//		triangles.erase(face);
 
 		// Add new faces to cover the "hole" made from the removed faces
 		for(auto iter = edges.begin(); iter != edges.end(); ++iter)
@@ -1267,14 +1304,13 @@ int CollisionTests::EPA(Collider* _a, Collider* _b, SupportPoint simplex[4], Con
 
 		// Clear edge list for next iteration
 		edges.clear();
-		prevDist = dist;
 		dist = G_MAX;
 	}
 
 	// Polytope fully expanded, extract collision info
 	// Get barycentric coordinates of origin projected onto nearest face
 	// Taken from "Real Time Collision Detection" by Christer Ericson, p47-48
-	Vector v0 = face->b - face->a, v1 = face->c - face->a, v2 = face->a.p.Negated();
+	Vector v0 = face->b - face->a, v1 = face->c - face->a, v2 = face->normal * dist - face->a.p;
 	gFloat d00 = v0.DotProduct(v0);
 	gFloat d01 = v0.DotProduct(v1);
 	gFloat d11 = v1.DotProduct(v1);
